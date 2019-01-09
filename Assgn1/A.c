@@ -61,18 +61,30 @@ int main()
     // First pipe to send input string from parent 
     // Second pipe to send concatenated string from child 
   
-    int fd1[2];  // Used to store two ends of first pipe 
-    int fd2[2];  // Used to store two ends of first pipe 
+    int fd_a_d[2];  // Used to store two ends of first pipe 
+    int fd_b_d[2];  // Used to store two ends of first pipe 
+    int fd_c_e[2];  // Used to store two ends of first pipe 
+    int fd_d_e[2];  // Used to store two ends of first pipe 
     int i;
 
     pid_t p; 
   
-    if (pipe(fd1)==-1) 
+    if (pipe(fd_a_d)==-1) 
     { 
         fprintf(stderr, "Pipe Failed" ); 
         return 1; 
     }
-    if (pipe(fd2)==-1) 
+    if (pipe(fd_b_d)==-1) 
+    { 
+        fprintf(stderr, "Pipe Failed" ); 
+        return 1; 
+    }
+    if (pipe(fd_c_e)==-1) 
+    { 
+        fprintf(stderr, "Pipe Failed" ); 
+        return 1; 
+    }
+    if (pipe(fd_d_e)==-1) 
     { 
         fprintf(stderr, "Pipe Failed" ); 
         return 1; 
@@ -109,12 +121,14 @@ int main()
 
             printf("I am A\n");
       
-            close(fd1[0]);  // Close reading end of first pipe 
+            close(fd_a_d[0]);  // Close reading end of first pipe 
       
             // Write input string and close writing end of first 
             // pipe. 
-            write(fd1[1], arr, sizeof(int) * 50); 
-            close(fd1[1]); 
+            write(fd_a_d[1], arr, sizeof(int) * 50); 
+            close(fd_a_d[1]); 
+
+            exit(0);
         
         }
 
@@ -131,12 +145,14 @@ int main()
             // for (i = 0; i < 50; i++)
             //     printf("Org: %d\n", arr2[i]);
 
-            close(fd2[0]);  // Close reading end of first pipe 
+            close(fd_b_d[0]);  // Close reading end of first pipe 
         
             // Write input string and close writing end of first 
             // pipe. 
-            write(fd2[1], arr2, sizeof(int) * 50);
-            close(fd2[1]);
+            write(fd_b_d[1], arr2, sizeof(int) * 50);
+            close(fd_b_d[1]);
+
+            exit(0);
 
         }
   
@@ -144,32 +160,109 @@ int main()
     // child process 
     else
     { 
-        printf("I am D.\n");
-        
-        int arr_here1[50];
-        close(fd1[1]);  // Close writing end of first pipe 
-  
-        // Read a string using first pipe 
-        read(fd1[0], arr_here1, sizeof(int) * 50);
-  
-        close(fd1[0]);
+        pid_t p3;
+        p3 = fork();
 
-        int arr_here2[50];
-        close(fd2[1]);  // Close writing end of first pipe 
-        wait(NULL);
-        // Read a string using first pipe 
-        read(fd2[0], arr_here2, sizeof(int) * 50);
-  
-        close(fd2[0]); 
-  
-        for (i = 0; i < 50; i++)
-            printf("First: %d\n", arr_here1[i]);
+        if (p3 < 0)
+            printf("Fork failed.\n");
+        else if (p3 > 0)  // Parent
+        {
+
+            printf("I am D.\n");
+            
+            int arr_here1[100];
+            close(fd_a_d[1]);  // Close writing end of first pipe 
+      
+            // Read a string using first pipe 
+            read(fd_a_d[0], arr_here1, sizeof(int) * 50);
+      
+            close(fd_a_d[0]);
+
+            close(fd_b_d[1]);  // Close writing end of first pipe 
+            wait(NULL);
+            // Read a string using first pipe 
+            read(fd_b_d[0], arr_here1+50, sizeof(int) * 50);
+      
+            close(fd_b_d[0]); 
+      
+            // for (i = 0; i < 50; i++)
+            //     printf("First: %d\n", arr_here1[i]);
 
 
-        for (i = 0; i < 50; i++)
-            printf("Second: %d\n", arr_here2[i]);
+            // for (i = 0; i < 50; i++)
+            //     printf("Second: %d\n", arr_here1[50+i]);
 
-        exit(0); 
+            quickSort(arr_here1, 0, 99);
+
+            close(fd_d_e[0]);  // Close reading end of first pipe 
+            
+            // Write input string and close writing end of first 
+            // pipe. 
+            write(fd_d_e[1], arr_here1, sizeof(int) * 100); 
+            close(fd_d_e[1]); 
+
+
+
+            exit(0); 
+            
+        }
+        else
+        {
+            pid_t p4;
+            p4 = fork();
+
+            if (p4 < 0)
+                printf("Fork failed.\n");
+            else if (p4 > 0)    // Parent
+            {
+                printf("I am C\n");
+                int arr[50];
+                srand(3);
+                for (i = 0; i < 50; i++)
+                    arr[i] = rand();
+
+                quickSort(arr, 0, 49);
+
+                // for (i = 0; i < 50; i++)
+                //     printf("Org: %d\n", arr2[i]);
+
+                close(fd_c_e[0]);  // Close reading end of first pipe 
+                
+                // Write input string and close writing end of first 
+                // pipe. 
+                write(fd_c_e[1], arr, sizeof(int) * 50);
+                close(fd_c_e[1]);
+
+                exit(0);
+            }
+            else
+            {
+                printf("I am E\n");
+                int arr_here[150];
+
+                close(fd_d_e[1]);  // Close writing end of first pipe 
+                // Read a string using first pipe 
+                read(fd_d_e[0], arr_here, sizeof(int) * 100);
+                
+                close(fd_d_e[0]);
+
+                close(fd_c_e[1]);  // Close writing end of first pipe 
+                wait(NULL);
+                // Read a string using first pipe 
+                read(fd_c_e[0], arr_here+100, sizeof(int) * 50);
+                
+                close(fd_c_e[0]); 
+
+                quickSort(arr_here, 0, 149);
+
+                for (i = 0; i < 150; i++)
+                    printf("Final: %d\n", arr_here[i]);
+
+                exit(0);
+                
+
+            }
+        }
 
 
   
