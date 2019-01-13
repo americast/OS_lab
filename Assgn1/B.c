@@ -11,7 +11,7 @@ int main()
 	char *args[100];
 	while(1)		// Start infinite loop
 	{
-		printf("\nEnter name of executable program (eg. ls ..): ");
+		printf("\nEnter name of executable program with arguments (eg. ls ..): ");
 		char exec[100];
 		gets(exec);
 

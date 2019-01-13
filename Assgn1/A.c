@@ -4,6 +4,7 @@
 #include<sys/types.h> 
 #include<string.h> 
 #include<sys/wait.h> 
+
 void swap(int* a, int* b) 
 { 
     int t = *a; 
@@ -34,31 +35,8 @@ int partition (int arr[], int low, int high)
     swap(&arr[i + 1], &arr[high]); 
     return (i + 1); 
 } 
-int sort(int* arr_here1, int* arr_here2, int m, int n)
-{
 
-    int i=0,j=m,k=0;
-    
-    while(i<m&&j<m+n)
-    {
-        if(arr_here1[i]<arr_here1[j])
-        {
-            arr_here2[k++] = arr_here1[i++];
-        }
-        else
-        {
-            arr_here2[k++] = arr_here1[j++];
-        }
-    }
-    while(i<m)
-    {
-        arr_here2[k++] = arr_here1[i++];
-    }
-    while(j<m+n)
-    {
-        arr_here2[k++] = arr_here1[j++];
-    }
-}
+
 /* The main function that implements QuickSort 
  arr[] --> Array to be sorted, 
   low  --> Starting index, 
@@ -78,6 +56,32 @@ void quickSort(int arr[], int low, int high)
     } 
 } 
 
+void sort(int* arr1, int* arr2, int m, int n)
+{
+
+    int i=0,j=m,k=0;
+    
+    while(i<m&&j<m+n)
+    {
+        if(arr1[i]<arr1[j])
+        {
+            arr2[k++] = arr1[i++];
+        }
+        else
+        {
+            arr2[k++] = arr1[j++];
+        }
+    }
+    while(i<m)
+    {
+        arr2[k++] = arr1[i++];
+    }
+    while(j<m+n)
+    {
+        arr2[k++] = arr1[j++];
+    }
+}
+
   
 int main() 
 { 
@@ -85,32 +89,32 @@ int main()
     // First pipe to send input string from parent 
     // Second pipe to send concatenated string from child 
   
-    int fd_a_d[2];  // Used to store two ends of first pipe 
-    int fd_b_d[2];  // Used to store two ends of first pipe 
-    int fd_c_e[2];  // Used to store two ends of first pipe 
-    int fd_d_e[2];  // Used to store two ends of first pipe 
+    int fd_a_d[2];  // Pipe from process a to d 
+    int fd_b_d[2];  // Pipe from process b to d
+    int fd_c_e[2];  // Pipe from process c to e
+    int fd_d_e[2];  // Pipe from process d to e
     int i;
 
     pid_t p; 
   
     if (pipe(fd_a_d)==-1) 
     { 
-        fprintf(stderr, "Pipe Failed" ); 
+        fprintf(stderr, "Pipe A to D Failed" ); 
         return 1; 
     }
     if (pipe(fd_b_d)==-1) 
     { 
-        fprintf(stderr, "Pipe Failed" ); 
+        fprintf(stderr, "Pipe B to D Failed" ); 
         return 1; 
     }
     if (pipe(fd_c_e)==-1) 
     { 
-        fprintf(stderr, "Pipe Failed" ); 
+        fprintf(stderr, "Pipe C to E Failed" ); 
         return 1; 
     }
     if (pipe(fd_d_e)==-1) 
     { 
-        fprintf(stderr, "Pipe Failed" ); 
+        fprintf(stderr, "Pipe D to E Failed" ); 
         return 1; 
     }
 
@@ -136,20 +140,23 @@ int main()
         // Parent process 
         else if (p2 > 0) 
         { 
-            int arr[50];
+            printf("I am A\n");
+            int arr_a[50];
 
             for (i = 0; i < 50; i++)
-                arr[i] = rand();
+                arr_a[i] = rand();
 
-            quickSort(arr, 0, 49);
+            quickSort(arr_a, 0, 49);
 
-            printf("I am A\n");
+            printf("Elements in A are\n");
+            for(i = 0; i < 50; i++)
+                printf("A%d: %d\n", i+1, arr_a[i]);
       
             close(fd_a_d[0]);  // Close reading end of first pipe 
       
             // Write input string and close writing end of first 
             // pipe. 
-            write(fd_a_d[1], arr, sizeof(int) * 50); 
+            write(fd_a_d[1], arr_a, sizeof(int) * 50); 
             close(fd_a_d[1]); 
 
             exit(0);
@@ -159,21 +166,23 @@ int main()
         else
         {
             printf("I am B.\n");
-            int arr2[50];
+
+            int arr_b[50];
             srand(2);
             for (i = 0; i < 50; i++)
-                arr2[i] = rand();
+                arr_b[i] = rand();
 
-            quickSort(arr2, 0, 49);
+            quickSort(arr_b, 0, 49);
 
-            // for (i = 0; i < 50; i++)
-            //     printf("Org: %d\n", arr2[i]);
+            printf("Elements in B are\n");
+            for(i = 0; i < 50; i++)
+                printf("B%d: %d\n", i+1, arr_b[i]);
 
             close(fd_b_d[0]);  // Close reading end of first pipe 
         
             // Write input string and close writing end of first 
             // pipe. 
-            write(fd_b_d[1], arr2, sizeof(int) * 50);
+            write(fd_b_d[1], arr_b, sizeof(int) * 50);
             close(fd_b_d[1]);
 
             exit(0);
@@ -194,38 +203,36 @@ int main()
 
             printf("I am D.\n");
             
-            int arr_here1[100];
+            int arr_ab[100];
             close(fd_a_d[1]);  // Close writing end of first pipe 
       
             // Read a string using first pipe 
-            read(fd_a_d[0], arr_here1, sizeof(int) * 50);
+            printf("D reading from A\n");
+            read(fd_a_d[0], arr_ab, sizeof(int) * 50);
       
             close(fd_a_d[0]);
 
             close(fd_b_d[1]);  // Close writing end of first pipe 
             wait(NULL);
+
             // Read a string using first pipe 
-            read(fd_b_d[0], arr_here1+50, sizeof(int) * 50);
+            printf("D reading from B\n");
+            read(fd_b_d[0], arr_ab+50, sizeof(int) * 50);
       
             close(fd_b_d[0]); 
       
-            // for (i = 0; i < 50; i++)
-            //     printf("First: %d\n", arr_here1[i]);
-
-
-            // for (i = 0; i < 50; i++)
-            //     printf("Second: %d\n", arr_here1[50+i]);
-            int arr_here2[100];
-            sort(arr_here1, arr_here2, 50, 50);
+            int arr_d[100];
+            sort(arr_ab, arr_d, 50, 50);
 
             close(fd_d_e[0]);  // Close reading end of first pipe 
             
             // Write input string and close writing end of first 
             // pipe. 
-            write(fd_d_e[1], arr_here2, sizeof(int) * 100); 
+            printf("Elements in D:\n");
+            for(int i =0; i<100;i++)
+                printf("D%d: %d\n", i+1 ,arr_d[i]);
+            write(fd_d_e[1], arr_d, sizeof(int) * 100); 
             close(fd_d_e[1]); 
-
-
 
             exit(0); 
             
@@ -237,24 +244,27 @@ int main()
 
             if (p4 < 0)
                 printf("Fork failed.\n");
+
             else if (p4 > 0)    // Parent
             {
                 printf("I am C\n");
-                int arr[50];
+
+                int arr_c[50];
                 srand(3);
                 for (i = 0; i < 50; i++)
-                    arr[i] = rand();
+                    arr_c[i] = rand();
 
-                quickSort(arr, 0, 49);
+                quickSort(arr_c, 0, 49);
 
-                // for (i = 0; i < 50; i++)
-                //     printf("Org: %d\n", arr2[i]);
+                printf("Elements in C:\n");
+                for (i = 0; i < 50; i++)
+                    printf("C%d: %d\n", i+1, arr_c[i]);
 
                 close(fd_c_e[0]);  // Close reading end of first pipe 
                 
                 // Write input string and close writing end of first 
                 // pipe. 
-                write(fd_c_e[1], arr, sizeof(int) * 50);
+                write(fd_c_e[1], arr_c, sizeof(int) * 50);
                 close(fd_c_e[1]);
 
                 exit(0);
@@ -262,26 +272,33 @@ int main()
             else
             {
                 printf("I am E\n");
-                int arr_here[150];
-
-                close(fd_d_e[1]);  // Close writing end of first pipe 
-                // Read a string using first pipe 
-                read(fd_d_e[0], arr_here, sizeof(int) * 100);
-                
-                close(fd_d_e[0]);
+                int arr_cd[150];
 
                 close(fd_c_e[1]);  // Close writing end of first pipe 
-                wait(NULL);
+                
                 // Read a string using first pipe 
-                read(fd_c_e[0], arr_here+100, sizeof(int) * 50);
+                printf("E reading from C\n");
+                read(fd_c_e[0], arr_cd+100, sizeof(int) * 50);
                 
                 close(fd_c_e[0]); 
 
-                int arr_here3[150];
-                sort(arr_here, arr_here3, 100, 50);
 
+                close(fd_d_e[1]);  // Close writing end of first pipe
+                wait(NULL);
+
+                // Read a string using first pipe 
+                printf("E reading from D\n");
+                read(fd_d_e[0], arr_cd, sizeof(int) * 100);
+                
+                close(fd_d_e[0]);
+
+
+                int arr_e[150];
+                sort(arr_cd, arr_e, 100, 50);
+
+                printf("Elements in E\n");
                 for (i = 0; i < 150; i++)
-                    printf("Final: %d\n", arr_here3[i]);
+                    printf("E%d: %d\n", i+1, arr_e[i]);
 
                 exit(0);
                 
