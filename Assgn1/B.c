@@ -58,6 +58,7 @@ int main()
 		else if (p == 0)
 		{
 			execvp(args[0],args); 		// replace the child process with an example process
+			perror("There was an error");
 			return 0;
 		}
 			// printf("PID: %d\n", p);

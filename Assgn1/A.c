@@ -34,7 +34,31 @@ int partition (int arr[], int low, int high)
     swap(&arr[i + 1], &arr[high]); 
     return (i + 1); 
 } 
-  
+int sort(int* arr_here1, int* arr_here2, int m, int n)
+{
+
+    int i=0,j=m,k=0;
+    
+    while(i<m&&j<m+n)
+    {
+        if(arr_here1[i]<arr_here1[j])
+        {
+            arr_here2[k++] = arr_here1[i++];
+        }
+        else
+        {
+            arr_here2[k++] = arr_here1[j++];
+        }
+    }
+    while(i<m)
+    {
+        arr_here2[k++] = arr_here1[i++];
+    }
+    while(j<m+n)
+    {
+        arr_here2[k++] = arr_here1[j++];
+    }
+}
 /* The main function that implements QuickSort 
  arr[] --> Array to be sorted, 
   low  --> Starting index, 
@@ -191,14 +215,14 @@ int main()
 
             // for (i = 0; i < 50; i++)
             //     printf("Second: %d\n", arr_here1[50+i]);
-
-            quickSort(arr_here1, 0, 99);
+            int arr_here2[100];
+            sort(arr_here1, arr_here2, 50, 50);
 
             close(fd_d_e[0]);  // Close reading end of first pipe 
             
             // Write input string and close writing end of first 
             // pipe. 
-            write(fd_d_e[1], arr_here1, sizeof(int) * 100); 
+            write(fd_d_e[1], arr_here2, sizeof(int) * 100); 
             close(fd_d_e[1]); 
 
 
@@ -253,10 +277,11 @@ int main()
                 
                 close(fd_c_e[0]); 
 
-                quickSort(arr_here, 0, 149);
+                int arr_here3[150];
+                sort(arr_here, arr_here3, 100, 50);
 
                 for (i = 0; i < 150; i++)
-                    printf("Final: %d\n", arr_here[i]);
+                    printf("Final: %d\n", arr_here3[i]);
 
                 exit(0);
                 
