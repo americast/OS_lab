@@ -5,6 +5,13 @@
 #include<string.h> 
 #include<sys/wait.h> 
 
+void delay(unsigned int mseconds)
+{
+    clock_t goal = mseconds + clock();
+    while (goal > clock());
+}
+
+
 void swap(int* a, int* b) 
 { 
     int t = *a; 
@@ -165,6 +172,7 @@ int main()
 
         else
         {
+            delay(1000);
             printf("I am B.\n");
 
             int arr_b[50];
@@ -200,7 +208,7 @@ int main()
             printf("Fork failed.\n");
         else if (p3 > 0)  // Parent
         {
-
+            delay(5000);
             printf("I am D.\n");
             
             int arr_ab[100];
@@ -239,6 +247,7 @@ int main()
         }
         else
         {
+
             pid_t p4;
             p4 = fork();
 
@@ -247,6 +256,8 @@ int main()
 
             else if (p4 > 0)    // Parent
             {
+                delay(3000);
+
                 printf("I am C\n");
 
                 int arr_c[50];
@@ -271,6 +282,7 @@ int main()
             }
             else
             {
+                delay(10000);
                 printf("I am E\n");
                 int arr_cd[150];
 
