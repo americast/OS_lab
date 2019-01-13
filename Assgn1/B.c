@@ -58,7 +58,9 @@ int main()
 		else if (p == 0)
 		{
 			execvp(args[0],args); 		// replace the child process with an example process
+			return 0;
 		}
+			// printf("PID: %d\n", p);
 		wait(NULL);
 		for (i = 0; i < 100; i++)
 			free(args[i]);
