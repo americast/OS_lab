@@ -1,3 +1,14 @@
+/***************************************************
+
+                    ASSIGNMENT 1 (a)
+
+    Group No.: 42
+
+    Members:    Sayan Sinha     (16CS10048)
+                Swastika Dutta  (16CS10060)
+
+****************************************************/
+
 #include<stdio.h> 
 #include<stdlib.h> 
 #include<unistd.h> 
@@ -18,57 +29,57 @@ void swap(int* a, int* b)
     *a = *b; 
     *b = t; 
 } 
-  
-/* This function takes last element as pivot, places 
-   the pivot element at its correct position in sorted 
-    array, and places all smaller (smaller than pivot) 
-   to left of pivot and all greater elements to right 
-   of pivot */
-int partition (int arr[], int low, int high) 
-{ 
-    int pivot = arr[high];    // pivot 
-    int i = (low - 1);  // Index of smaller element 
+
+/** Start of quick sort module **/
+int partition( int a[], int l, int r)
+{
+    int pivot, i, j, t;
+    pivot = a[l];
+    i = l;
+    j = r+1;
+    while( 1) 
+    {
+        do 
+        {
+            ++i;
+        } while(a[i]<=pivot && i<=r);
+        do {
+            --j;
+        } while( a[j] > pivot );
+        if( i >= j ) break;
+        t = a[i];
+        a[i] = a[j];
+        a[j] = t;
+    }
+    t = a[l];
+    a[l] = a[j];
+    a[j] = t;
+    return j;
+}  
+
+
+void quickSort( int a[], int l, int r)
+{
     int j;
-    for (j = low; j <= high- 1; j++) 
-    { 
-        // If current element is smaller than or 
-        // equal to pivot 
-        if (arr[j] <= pivot) 
-        { 
-            i++;    // increment index of smaller element 
-            swap(&arr[i], &arr[j]); 
-        } 
-    } 
-    swap(&arr[i + 1], &arr[high]); 
-    return (i + 1); 
-} 
+    if( l < r ) 
+    { // divide and conquer
+        j = partition( a, l, r);
+        quickSort( a, l, j-1);
+        quickSort( a, j+1, r);
+    }
+}   
+
+/** End of quick sort module **/
 
 
-/* The main function that implements QuickSort 
- arr[] --> Array to be sorted, 
-  low  --> Starting index, 
-  high  --> Ending index */
-void quickSort(int arr[], int low, int high) 
-{ 
-    if (low < high) 
-    { 
-        /* pi is partitioning index, arr[p] is now 
-           at right place */
-        int pi = partition(arr, low, high); 
-  
-        // Separately sort elements before 
-        // partition and after partition 
-        quickSort(arr, low, pi - 1); 
-        quickSort(arr, pi + 1, high); 
-    } 
-} 
+/** Function to merge two sorted arrays into one array **/
 
-void sort(int* arr1, int* arr2, int m, int n)
+void merge(int* arr1, int* arr2, int m, int n)
 {
 
     int i=0,j=m,k=0;
     
-    while(i<m&&j<m+n)
+    while(i<m && j<m+n)
     {
         if(arr1[i]<arr1[j])
         {
@@ -152,10 +163,11 @@ int main()
 
             for (i = 0; i < 50; i++)
                 arr_a[i] = rand();
-
+ 
+            // Sort the elements in A:
             quickSort(arr_a, 0, 49);
 
-            printf("Elements in A are\n");
+            printf("Elements in A:\n");
             for(i = 0; i < 50; i++)
                 printf("A%d: %d\n", i+1, arr_a[i]);
       
@@ -180,9 +192,10 @@ int main()
             for (i = 0; i < 50; i++)
                 arr_b[i] = rand();
 
+            // Sort the elements in B:
             quickSort(arr_b, 0, 49);
 
-            printf("Elements in B are\n");
+            printf("Elements in B:\n");
             for(i = 0; i < 50; i++)
                 printf("B%d: %d\n", i+1, arr_b[i]);
 
@@ -206,7 +219,7 @@ int main()
 
         if (p3 < 0)
             printf("Fork failed.\n");
-        else if (p3 > 0)  // Parent
+        else if (p3 > 0)  // Parent process
         {
             delay(5000);
             printf("I am D.\n");
@@ -230,7 +243,7 @@ int main()
             close(fd_b_d[0]); 
       
             int arr_d[100];
-            sort(arr_ab, arr_d, 50, 50);
+            merge(arr_ab, arr_d, 50, 50);
 
             close(fd_d_e[0]);  // Close reading end of first pipe 
             
@@ -265,6 +278,7 @@ int main()
                 for (i = 0; i < 50; i++)
                     arr_c[i] = rand();
 
+                // Sort the elements in C:
                 quickSort(arr_c, 0, 49);
 
                 printf("Elements in C:\n");
@@ -306,7 +320,7 @@ int main()
 
 
                 int arr_e[150];
-                sort(arr_cd, arr_e, 100, 50);
+                merge(arr_cd, arr_e, 100, 50);
 
                 printf("Elements in E\n");
                 for (i = 0; i < 150; i++)
