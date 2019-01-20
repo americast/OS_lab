@@ -96,7 +96,7 @@ int execute(char *args[100])
 
 int main()
 {
-	int i;
+	int i, j;
 	char *args[100];
 	while(1)		// Start infinite loop
 	{
@@ -111,32 +111,31 @@ int main()
 
 		pid_t p; 
 		
-		// for (i = 0; i < 100; i++)
-		// 	memset(args[i], 0, 100);
-		// printf("Loop starts\n");
 		int count = 0;
 		for (i = 0; i < 100; i++)
 		{
 			char here[100];
+
 			sscanf(exec+count, "%s", here);
 			// free(args[i]);
+
 			args[i] = (char *) malloc(strlen(here)+1);
 			strcpy(args[i], here);
 		
 			// printf("Org now: %s\n", exec+count);
 			count+=strlen(args[i]);
 			if (count>=len)
+			{
+				args[++i] = NULL;
+				int wait_flag = execute(args);
+				if(!wait_flag) wait(NULL);
+				for (j = 0; j < i; j++)
+					free(args[j]);
 				break;
+
+			}
 			for (;*(exec+count)==' ';)
 				count++;
 		}
-		i++;
-		for (; i < 100; i++)
-			args[i] = NULL;
-
-		int wait_flag = execute(args);
-		if(!wait_flag) wait(NULL);
-		for (i = 0; i < 100; i++)
-			free(args[i]);
 	}
 }
