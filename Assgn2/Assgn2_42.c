@@ -4,6 +4,7 @@
 #include<sys/types.h> 
 #include<string.h> 
 #include<sys/wait.h> 
+#include<fcntl.h>
 
 int main()
 {
@@ -45,8 +46,50 @@ int main()
 		for (; i < 100; i++)
 			args[i] = NULL;
 
-		// for (i = 0; i < 100; i++)
-		// 	printf("Command %d: %s\n", i, args[i]);
+		char in_file[100], out_file[100];
+		int flag_in = 0, flag_out =0, flag = 1;
+		for (i = 0; i < 100 && args[i]; i++)
+		{
+			// printf("i is: %d\n", i);
+			if (strcmp(args[i], "<") == 0)
+			{
+				if(flag_out==1)
+				{	fprintf(stderr, "Wrong command %s\n" );
+					return(1);
+				}
+				flag_in = 1;
+				flag = 0;
+			}	
+			else if(strcmp(args[i], ">") == 0)
+			{
+				if(flag_in==1)
+				{	fprintf(stderr, "Wrong command %s\n" );
+					return(1);
+				}
+				flag_out = 1;
+				flag = 0;
+			}
+			else if(flag_in)
+			{
+				strcpy(in_file, args[i]);
+				flag_in = 0;
+			}
+			else if(flag_out)
+			{
+				strcpy(out_file, args[i]);
+				flag_out = 0;
+			}
+			else
+			{
+				if(!flag)
+				{
+					args[i] = NULL;
+				}
+			}
+			// printf("Command %d: %s\n", i, args[i]);
+		}
+
+
 
 		p = fork(); 	// spawning
 		
@@ -57,6 +100,15 @@ int main()
 		} 
 		else if (p == 0)
 		{
+			int f_in = open(in_file, O_RDONLY);
+			if(f_in<0)
+			{
+				perror("Input file error ");
+				exit(EXIT_FAILURE);
+			}
+			dup2(f_in,0);
+			int f_out = open(out_file, O_WRONLY| O_CREAT);
+			dup2(f_out,1);
 			execvp(args[0],args); 		// replace the child process with an example process
 			perror("There was an error");
 			return 0;
