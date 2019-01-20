@@ -6,11 +6,12 @@
 #include<sys/wait.h> 
 #include<fcntl.h>
 
-int execute(char *args[100])
+int execute(char *args[100], int fd[2], int flag_pipe)
 {
 
 	char in_file[100], out_file[100];
-	int i, flag_in = 0, flag_out =0, flag = 1, wait_flag = 0, p_start = 0, p_end =0, p = 0;
+	int i, flag_in = 0, flag_out =0, flag = 1, wait_flag = 0;
+
 	for (i = 0; i < 100 && args[i]; i++)
 	{
 		// printf("i is: %d\n", i);
@@ -56,7 +57,7 @@ int execute(char *args[100])
 		// printf("Command %d: %s\n", i, args[i]);
 	}
 
-	p = fork(); 	// spawning
+	pid_t p = fork(); 	// spawning
 	
 	if (p < 0)
 	{ 
@@ -85,11 +86,25 @@ int execute(char *args[100])
 			}
 			dup2(f_out,1);
 		}
+		// close(fd[0]);
+		if(flag_pipe==1)
+		{
+			dup2(fd[1],1);
+		}
+		else if (flag_pipe == 2)
+		{
+			dup2(fd[1], 1);
+			dup2(fd[0], 0);
+		}
+		else if (flag_pipe == 3)
+		{
+			dup2(fd[0], 0);
+		}
 		execvp(args[0],args); 		// replace the child process with an example process
 		perror("There was an error");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	return wait_flag;
 
 }
@@ -97,7 +112,14 @@ int execute(char *args[100])
 int main()
 {
 	int i, j;
+	int fd[2];
 	char *args[100];
+
+	if (pipe(fd) < 0)
+	{
+		perror("Pipe could not be created ");
+		exit(EXIT_FAILURE);
+	}
 	while(1)		// Start infinite loop
 	{
 		printf("\nEnter name of executable program with arguments (eg. ls ..): ");
@@ -109,30 +131,52 @@ int main()
 		if (strcmp(exec,"quit")==0)	// quit command
 			return 0;
 
-		pid_t p; 
+		int flag_pipe=0; 
 		
-		int count = 0;
-		for (i = 0; i < 100; i++)
+		int count = 0, actual_i = 0;
+		for (i = 0; i < 100; i++, actual_i++)
 		{
+			dup2(stdin,0);
+			dup2(stdout,1);
+			dup2(stderr,2);
+
 			char here[100];
 
 			sscanf(exec+count, "%s", here);
 			// free(args[i]);
-
-			args[i] = (char *) malloc(strlen(here)+1);
-			strcpy(args[i], here);
-		
-			// printf("Org now: %s\n", exec+count);
-			count+=strlen(args[i]);
-			if (count>=len)
+			if(strcmp(here,"|")==0)
 			{
-				args[++i] = NULL;
-				int wait_flag = execute(args);
+				if (flag_pipe == 1 ||  flag_pipe == 2)
+					flag_pipe = 2;
+				if (flag_pipe == 0)
+					flag_pipe = 1;
+			}
+			if(strcmp(here,"|"))
+			{
+				args[actual_i] = (char *) malloc(strlen(here)+1);
+				strcpy(args[actual_i], here);
+			}
+			// printf("Org now: %s\n", exec+count);
+			count+=strlen(here);
+			if (count>=len || flag_pipe)
+			{
+				if (!flag_pipe)
+					args[++actual_i] = NULL;
+				else
+					args[actual_i] = NULL;
+				int wait_flag;
+				if (count>=len && flag_pipe)
+					wait_flag = execute(args, fd, 3);
+				else if (flag_pipe)
+					wait_flag = execute(args, fd, flag_pipe);
+				else
+					wait_flag = execute(args, fd, 0);
 				if(!wait_flag) wait(NULL);
 				for (j = 0; j < i; j++)
 					free(args[j]);
-				break;
-
+				actual_i = -1;
+				if (!flag_pipe || count>=len)
+					break;
 			}
 			for (;*(exec+count)==' ';)
 				count++;
