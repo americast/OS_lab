@@ -8,6 +8,7 @@
 
 int execute(char *args[100], int fd[2], int flag_pipe)
 {
+	printf("arg: %s and flag: %d\n", args[0], flag_pipe);
 
 	char in_file[100], out_file[100];
 	int i, flag_in = 0, flag_out =0, flag = 1, wait_flag = 0;
@@ -89,20 +90,25 @@ int execute(char *args[100], int fd[2], int flag_pipe)
 		// close(fd[0]);
 		if(flag_pipe==1)
 		{
+			close(fd[0]);
 			dup2(fd[1],1);
+			close(fd[1]);
 		}
 		else if (flag_pipe == 2)
 		{
 			dup2(fd[1], 1);
 			dup2(fd[0], 0);
+			close(fd[0]);
 		}
 		else if (flag_pipe == 3)
 		{
+			close(fd[1]);
 			dup2(fd[0], 0);
+			close(fd[0]);
 		}
 		execvp(args[0],args); 		// replace the child process with an example process
 		perror("There was an error");
-		exit(EXIT_FAILURE);
+		exit(0);
 	}
 
 	return wait_flag;
@@ -136,6 +142,7 @@ int main()
 		int count = 0, actual_i = 0;
 		for (i = 0; i < 100; i++, actual_i++)
 		{
+			// printf("actual_i: %d\n", actual_i);
 			dup2(stdin,0);
 			dup2(stdout,1);
 			dup2(stderr,2);
@@ -144,34 +151,46 @@ int main()
 
 			sscanf(exec+count, "%s", here);
 			// free(args[i]);
+			printf("%s\n",here);
 			if(strcmp(here,"|")==0)
 			{
+				printf("Here1\n");
 				if (flag_pipe == 1 ||  flag_pipe == 2)
 					flag_pipe = 2;
 				if (flag_pipe == 0)
 					flag_pipe = 1;
+				args[actual_i] = NULL;
 			}
 			if(strcmp(here,"|"))
 			{
+				printf("Here2\n");
+				// printf("here: %s\n", here);
 				args[actual_i] = (char *) malloc(strlen(here)+1);
 				strcpy(args[actual_i], here);
 			}
 			// printf("Org now: %s\n", exec+count);
 			count+=strlen(here);
-			if (count>=len || flag_pipe)
+			if (count>=len || (flag_pipe && strcmp(here, "|")==0))
 			{
+				printf("Here3\n");
 				if (!flag_pipe)
 					args[++actual_i] = NULL;
-				else
-					args[actual_i] = NULL;
 				int wait_flag;
+				int bon;
+
+				for (bon = 0; bon < 2; bon++)
+					printf("bon is: %s\n", args[bon]);
+				printf("flag is %d\n\n",flag_pipe);
+				// printf("Sending: %s\n", args[0]);
 				if (count>=len && flag_pipe)
 					wait_flag = execute(args, fd, 3);
 				else if (flag_pipe)
 					wait_flag = execute(args, fd, flag_pipe);
 				else
 					wait_flag = execute(args, fd, 0);
+				printf("Here4\n");
 				if(!wait_flag) wait(NULL);
+				printf("Here5\n");
 				for (j = 0; j < i; j++)
 					free(args[j]);
 				actual_i = -1;
