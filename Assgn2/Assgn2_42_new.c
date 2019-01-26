@@ -107,7 +107,6 @@ int main()
 			perror("Pipe could not be created ");
 			exit(EXIT_FAILURE);
 		}
-		
 		execute(exec, len, fd, 0);
 		printf("\n");
 	}
