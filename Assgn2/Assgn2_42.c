@@ -19,7 +19,8 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 		if (strcmp(args[i], "<") == 0)
 		{
 			if(flag_out==1)
-			{	fprintf(stderr, "Wrong command %s\n" );
+			{	
+				fprintf(stderr, "Wrong command %s\n" );
 				return(1);
 			}
 			flag_in = 1;
@@ -28,7 +29,8 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 		else if(strcmp(args[i], ">") == 0)
 		{
 			if(flag_in==1)
-			{	fprintf(stderr, "Wrong command %s\n" );
+			{	
+				fprintf(stderr, "Wrong command %s\n" );
 				return(1);
 			}
 			flag_out = 1;
@@ -38,16 +40,21 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 		{
 			strcpy(in_file, args[i]);
 			flag_in = 2;
+			args[i] = NULL;
+			args[i - 1] = NULL;
 		}
 		else if(flag_out==1)
 		{
 			strcpy(out_file, args[i]);
 			flag_out = 2;
+			args[i] = NULL;
+			args[i - 1] = NULL;
 		}
 		else
 		{
 			if(strcmp(args[i],"&")==0)
 			{
+				args[i] = NULL;
 				wait_flag = 1;
 			}
 			if(!flag)
@@ -144,7 +151,7 @@ int main()
 	// }
 	while(1)		// Start infinite loop
 	{
-		printf("\nEnter name of executable program with arguments (eg. ls ..): ");
+		printf("\n\nEnter name of executable program with arguments (eg. ls ..): ");
 		// dup2(stdin,0);
 		// dup2(stdout,1);
 		// dup2(stderr,2);
@@ -211,7 +218,7 @@ int main()
 				int bon;
 
 
-				// for (bon = 0; bon < 3; bon++)
+				// for (bon = 0; bon < 4; bon++)
 				// 	printf("bon is: %s\n", args[bon]);
 				// printf("flag is %d\n\n",flag_pipe);
 				// printf("Sending: %s\n", args[0]);
@@ -233,7 +240,15 @@ int main()
 				dup2(stdin,0);
 				dup2(stdout,1);
 				dup2(stderr,2);
-				if(!wait_flag) wait(NULL);
+				int status, wpid; 
+				if(!wait_flag)
+				{
+					while ((wpid = wait(&status)) > 0)
+					{
+						if (status < 0)
+							printf("Some error occured\n");
+					}
+				}
 				// sleep(1);
 				// printf("Here5\n");
 				for (j = 0; j < actual_i; j++)
