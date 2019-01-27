@@ -1,3 +1,14 @@
+/***************************************************
+
+                    ASSIGNMENT 2
+
+    Group No.: 42
+
+    Members:    Swastika Dutta  (16CS10060)
+    			Sayan Sinha     (16CS10048)
+
+****************************************************/
+
 #include<stdio.h> 
 #include<stdlib.h> 
 #include<unistd.h> 
@@ -8,15 +19,13 @@
 
 int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 {
-	// printf("arg: %s 	and flag: %d\n", args[0], flag_pipe);
 
 	char in_file[100], out_file[100];
 	int i, flag_in = 0, flag_out =0, flag = 1, wait_flag = 0, f_in, f_out;
 
 	for (i = 0; i < 100 && args[i]; i++)
 	{
-		// printf("i is: %d\n", i);
-		if (strcmp(args[i], "<") == 0)
+		if (strcmp(args[i], "<") == 0)			// To check input redirection
 		{
 			if(flag_out==1)
 			{	
@@ -26,7 +35,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			flag_in = 1;
 			flag = 0;
 		}	
-		else if(strcmp(args[i], ">") == 0)
+		else if(strcmp(args[i], ">") == 0)		// To check for output redirection
 		{
 			if(flag_in==1)
 			{	
@@ -36,7 +45,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			flag_out = 1;
 			flag = 0;
 		}
-		else if(flag_in==1)
+		else if(flag_in==1)						// If input redirection is present
 		{
 			strcpy(in_file, args[i]);
 			flag_in = 2;
@@ -44,7 +53,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			args[i - 1] = NULL;
 			printf("In file set\n");
 		}
-		else if(flag_out==1)
+		else if(flag_out==1)					// If output redirection is present
 		{
 			strcpy(out_file, args[i]);
 			flag_out = 2;
@@ -54,7 +63,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 		}
 		else
 		{
-			if(strcmp(args[i],"&")==0)
+			if(strcmp(args[i],"&")==0)			// For running in background
 			{
 				args[i] = NULL;
 				wait_flag = 1;
@@ -64,7 +73,6 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 				args[i] = NULL;
 			}
 		}
-		// printf("Command %d: %s\n", i, args[i]);
 	}
 
 	pid_t p = fork(); 	// spawning
@@ -72,14 +80,10 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 	if (p < 0)
 	{ 
 	    fprintf(stderr, "Fork Failed" ); 
-	    // return 1; 
 	} 
 	else if (p == 0)
 	{
-		// dup2(stdin,0);
-		// dup2(stdout,1);
-		// dup2(stderr,2);
-		if(flag_in)
+		if(flag_in)								// If input redirection is found
 		{
 			f_in = open(in_file, O_RDONLY);
 			if(f_in<0)
@@ -91,7 +95,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			dup2(f_in,0);
 
 		}
-		if(flag_out)
+		if(flag_out)							// If output redirection is found
 		{
 			f_out = open(out_file, O_WRONLY| O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 			if(f_out<0)
@@ -102,16 +106,14 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			printf("Redirecting output\n");
 			dup2(f_out,1);
 		}
-		// close(fd[0]);
-		// printf("i here: %d\n", i_here);
-		if(flag_pipe==1)
+		if(flag_pipe==1)						// If pipe out is needed
 		{
 			close(fd[i_here][0]);
 			close(1);
 			dup(fd[i_here][1]);
 			close(fd[i_here][1]);
 		}
-		else if (flag_pipe == 2)
+		else if (flag_pipe == 2)				// If both pipe in and pipe out are needed
 		{
 			close(1);
 			dup(fd[i_here][1]);
@@ -120,22 +122,21 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			close(fd[i_here-1][0]);
 			close(fd[i_here][1]);
 		}
-		else if (flag_pipe == 3)
+		else if (flag_pipe == 3)				// If pipe out is needed
 		{
 			close(fd[i_here-1][1]);
 			close(0);
 			dup(fd[i_here-1][0]);
 			close(fd[i_here-1][0]);
 		}
-		execvp(args[0],args); 		// replace the child process with an example process
+		execvp(args[0],args); 					// replace the child process with the given process
 		perror("There was an error");
 		close(f_in);
 		close(f_out);
-		// if(flag_pipe==2) close(fd[1]);
 		exit(EXIT_FAILURE);
 	}
 
-	if (flag_pipe == 1 || flag_pipe == 2)
+	if (flag_pipe == 1 || flag_pipe == 2)		// Close necessary pipes in parent to mark end of output
 		close(fd[i_here][1]);
 	if (flag_pipe == 2 || flag_pipe == 3)
 		close(fd[i_here-1][0]);
@@ -148,26 +149,12 @@ int main()
 	int i, j, g_count = 0;
 	char *args[100];
 
-	// if (pipe(fd) < 0)
-	// {
-	// 	perror("Pipe could not be created ");
-	// 	exit(EXIT_FAILURE);
-	// }
 	while(1)		// Start infinite loop
 	{
 		printf("\n\nEnter name of executable program with arguments (eg. ls ..): ");
-		// dup2(stdin,0);
-		// dup2(stdout,1);
-		// dup2(stderr,2);
 		char exec[100], ch;
-		// if (g_count)
-		// 	while ((ch = getchar()) != '\n' && ch != EOF);
-		// fflush(stdin);
 		gets(exec);
 		int fd[100][2];
-		// g_count++;
-
-
 
 		int len = strlen(exec);
 
@@ -179,94 +166,57 @@ int main()
 		int count = 0, actual_i = 0, pipe_count = 0;
 		for (i = 0; i < 100; i++, actual_i++)
 		{
-			// printf("\n");
-			// printf("actual_i: %d\n", actual_i);
-			// dup2(stdin,0);
-			// dup2(stdout,1);
-			// dup2(stderr,2);
-
 			char here[100];
 			sscanf(exec+count, "%s", here);
-			// free(args[i]);
-			// printf("%s\n",here);
-			if(strcmp(here,"|")==0)
+			if(strcmp(here,"|")==0)							// If pipe found, segregate the commands
 			{
 				if (pipe(fd[pipe_count]) < 0)
 				{
 					perror("Pipe could not be created ");
 					exit(EXIT_FAILURE);
 				}
-				// printf("Here1\n");
-				if (flag_pipe == 1 ||  flag_pipe == 2)
+				if (flag_pipe == 1 ||  flag_pipe == 2)		// If pipe out was in previous command
 					flag_pipe = 2;
 				if (flag_pipe == 0)
 					flag_pipe = 1;
 				args[actual_i] = NULL;
 			}
-			if(strcmp(here,"|"))
+			if(strcmp(here,"|"))							// If no pipe found till now
 			{
-				// printf("Here2\n");
-				// printf("here: %s\n", here);
 				args[actual_i] = (char *) malloc(strlen(here)+1);
 				strcpy(args[actual_i], here);
 			}
-			// printf("Org now: %s\n", exec+count);
 			count+=strlen(here);
-			if (count>=len || (flag_pipe && strcmp(here, "|")==0))
+			if (count>=len || (flag_pipe && strcmp(here, "|")==0))	// If breaking condition is found
 			{
-				// printf("Here3\n");
-				// printf("flag pipe is: %d\n", flag_pipe);
-				// printf("actual_i is: %d\n", actual_i);
 				args[++actual_i] = NULL;
 				int wait_flag;
-				int bon;
-
-
-				// for (bon = 0; bon < 4; bon++)
-				// 	printf("bon is: %s\n", args[bon]);
-				// printf("flag is %d\n\n",flag_pipe);
-				// printf("Sending: %s\n", args[0]);
-				if (count>=len && flag_pipe)
-				{
+				if (count>=len && flag_pipe)						// If all commands have been parsed and there was a pipe out previously
 					wait_flag = execute(args, fd, pipe_count, 3);
-					// close(fd[pipe_count][0]);
-				}
 				else if (flag_pipe)
-					wait_flag = execute(args, fd, pipe_count, flag_pipe);
+					wait_flag = execute(args, fd, pipe_count, flag_pipe);	// If pipe in is needed
 				else
-					wait_flag = execute(args, fd, pipe_count, 0);
-				// printf("Here4\n");
-				// close(fd[0]);
-				// char eof_here[2];
-				// sprintf(eof_here, "%d", EOF);
-				// write(fd[1], eof_here, 2);
-				// close(fd[0]);
+					wait_flag = execute(args, fd, pipe_count, 0);			// If no pipes are involved
 				dup2(stdin,0);
 				dup2(stdout,1);
 				dup2(stderr,2);
 				int status, wpid; 
 				if(!wait_flag)
 				{
-					while ((wpid = wait(&status)) > 0)
+					while ((wpid = wait(&status)) > 0)						// Wait for all children to complete
 					{
 						if (status < 0)
 							printf("Some error occured\n");
 					}
 				}
-				// sleep(1);
-				// printf("Here5\n");
 				for (j = 0; j < actual_i; j++)
 					free(args[j]);
 				actual_i = -1;
 				pipe_count++;
 				if (!flag_pipe || count>=len)
-				{
-					// execlp("./a.out", "./a.out");	
-					// exit(0);
 					break;
-				}
 			}
-			for (;*(exec+count)==' ';)
+			for (;*(exec+count)==' ';)						// Cross spaces to reach next command
 				count++;
 			if (count>=len)
 				break;
