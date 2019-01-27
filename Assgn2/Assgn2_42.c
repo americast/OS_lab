@@ -8,7 +8,7 @@
 
 int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 {
-	// printf("arg: %s and flag: %d\n", args[0], flag_pipe);
+	// printf("arg: %s 	and flag: %d\n", args[0], flag_pipe);
 
 	char in_file[100], out_file[100];
 	int i, flag_in = 0, flag_out =0, flag = 1, wait_flag = 0, f_in, f_out;
@@ -42,6 +42,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			flag_in = 2;
 			args[i] = NULL;
 			args[i - 1] = NULL;
+			printf("In file set\n");
 		}
 		else if(flag_out==1)
 		{
@@ -49,6 +50,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 			flag_out = 2;
 			args[i] = NULL;
 			args[i - 1] = NULL;
+			printf("out file set\n");
 		}
 		else
 		{
@@ -85,6 +87,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 				perror("Input file error ");
 				exit(EXIT_FAILURE);
 			}
+			printf("Redirecting input\n");
 			dup2(f_in,0);
 
 		}
@@ -96,6 +99,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 				perror("Output file error ");
 				exit(EXIT_FAILURE);
 			}
+			printf("Redirecting output\n");
 			dup2(f_out,1);
 		}
 		// close(fd[0]);
@@ -127,7 +131,7 @@ int execute(char *args[100], int fd[100][2], int i_here, int flag_pipe)
 		perror("There was an error");
 		close(f_in);
 		close(f_out);
-		if(flag_pipe==2) close(fd[1]);
+		// if(flag_pipe==2) close(fd[1]);
 		exit(EXIT_FAILURE);
 	}
 
