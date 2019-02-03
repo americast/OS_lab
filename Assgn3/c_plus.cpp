@@ -6,15 +6,16 @@
 #include <math.h>
 
 #define E 2.731
-#define MEAN 5
+#define LAMBDA 0.75
 
 using namespace std;
 
-int curr_time = 0;
-typedef struct process
+float curr_time = 0;
+struct process
 {
-    int id,arr_time,CPU_burst;
-}process;
+    int id;
+    float arr_time, CPU_burst;
+};
 
 bool operator<(const process& p1, const process& p2) 
 { 
@@ -23,31 +24,59 @@ bool operator<(const process& p1, const process& p2)
 
 void genCPUBursts(vector<process> &P , int N)
 {
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::uniform_real_distribution<double> dist(0, 20);
+    std::mt19937_64 rng(seed);
+
+    // cout<<"Rand vars start: \n";
     for(int i = 0; i<N; i++)
     {
-        P[i].id = i+1;
-        P[i].CPU_burst =(rand()%20)+1 ; 
+        P[i].id = i + 1;
+        P[i].CPU_burst = dist(rng); 
+        // cout<<P[i].CPU_burst<<", ";
     }
+    // cout<<"\nRand vars end.\n";
 }
 
-void genArrTime(vector<process> &P , int N)
+void genArrTime(vector<process> &P, int N)
 {
     P[0].arr_time = 0;
     srand(time(0));
+
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::uniform_real_distribution<double> dist(0, 1);
+    std::mt19937_64 rng(seed);
+
+    // cout<<"Exp rand vars start: \n";
+
     for(int i = 1; i<N; i++)
     {
 
         // float R = (rand()%100000)/100000.0;
         // cout<<R<<"   :    ";
-        // cout<<(-1.0 / MEAN ) * log(R) /log(E)<<" \n";
+        // cout<<(-1.0 / LAMBDA ) * log(R) /log(E)<<" \n";
 
-        P[i].arr_time = P[i-1].arr_time+(rand()%10)+1;
+        float R = dist(rng);
+        // cout<<R<<", "<<endl;
+        R = (-1.0 / LAMBDA) * log(R);
+        // R *= 10;
+        // cout<<R<<", ";
+
+        if (R>10)
+        {
+            i--;
+            continue;
+        }
+
+        P[i].arr_time = P[i-1].arr_time+R;
     }
+    // cout<<"\nExp rand vars end\n";
 }
 
 float atn_fcfs(vector<process> P , int N)
 {
-    int i ,curr_time = 0, atn = 0;
+    int i;
+    float curr_time = 0, atn = 0;
     cout<<"\n\nFCFS start\n";
     for( i = 0; i< N; i++)
     {
@@ -67,9 +96,10 @@ float atn_fcfs(vector<process> P , int N)
     return((float)atn/N);
 }
 
-float atn_nsjf(vector<process> P ,  int N)
+float atn_nsjf(vector<process> P,  int N)
 {
-    int i, curr_time = 0, atn = 0;
+    int i;
+    float curr_time = 0, atn = 0;
     cout<<"\n\nnNSJF start\n";
     priority_queue <process> pq;
     for( i = 0; i< N; )
@@ -103,9 +133,10 @@ float atn_nsjf(vector<process> P ,  int N)
     return((float)atn/N);
 }
 
-float atn_sjf(vector<process> P ,  int N)
+float atn_sjf(vector <process> P,  int N)
 {
-    int i = 0, curr_time = 0, atn = 0,count = 0;
+    int i = 0, count = 0;
+    float curr_time = 0, atn = 0;
     cout<<"\n\npNSJF start\n";
     priority_queue <process> pq;
     while(count<N)
@@ -141,7 +172,8 @@ float atn_sjf(vector<process> P ,  int N)
 
 float atn_rr(vector<process> P ,  int N)
 {
-    int i = 0, curr_time = 0, atn = 0,count = 0;
+    int i = 0, count = 0;
+    float curr_time = 0, atn = 0;
     cout<<"\n\nRR start\n";
     vector<process> ready;
     int rem = 0;
@@ -194,7 +226,8 @@ bool compareRN(process i1, process i2)
 
 float atn_hrn(vector<process> P ,  int N)
 {
-    int i = 0 , atn = 0, count = 0;
+    int i = 0, count = 0;
+    float atn = 0;
     curr_time  = 0;
     cout<<"\n\nHRN start\n";
     vector <process> pq;
@@ -282,7 +315,6 @@ int main()
         cout<<"Enter -1 to quit \n";
         int i, N;
         cin>>N;
-        vector<process> P(N);
         if(N==-1)
         {
             cout<<"Exiting program\n";
@@ -293,6 +325,7 @@ int main()
             cout<<"Wrong input!!!\n";
             continue;
         }
+        vector<process> P(N);
 
         genCPUBursts(P,N);
         genArrTime(P,N);
@@ -302,21 +335,34 @@ int main()
             fprintf( table , "\tProcess Number\tCPU Burst\tInter Arrival Time\t\n" );
             for(i = 0; i<N; i++)
             {
-                fprintf( table , "\t%d\t\t%d\t\t%d\t\n" , P[i].id , P[i].CPU_burst , P[i].arr_time );
+                fprintf( table , "\t%d\t\t%f\t\t%f\t\n" , P[i].id , P[i].CPU_burst , P[i].arr_time );
             }
             fclose(table);
         }
         else
-        {
             perror("Error in opening output file : \n");
-        }
 
-        cout<<"Non-preemptive First Come First Serve (FCFS)     : "<<atn_fcfs(P , N)<<"\n";
-        cout<<"Non-preemptive Shortest Job First                : "<<atn_nsjf(P , N)<<"\n";
-        cout<<"Pre-emptive Shortest Job First                   : "<<atn_sjf(P , N)<<"\n";
-        cout<<"Round Robin with time quantum δ = 2 time units   : "<<atn_rr(P , N)<<"\n";
-        cout<<"Highest response-ratio next (HRN)                : "<<atn_hrn(P , N)<<"\n";
+        // fclose(table);
 
+        float a,b,c,d,e;
+        a = atn_fcfs(P , N);
+        cout<<"Non-preemptive First Come First Serve (FCFS)     : "<<a<<"\n";
+
+        b = atn_nsjf(P , N);
+        cout<<"Non-preemptive Shortest Job First                : "<<b<<"\n";
+
+        c = atn_sjf(P , N);
+        cout<<"Pre-emptive Shortest Job First                   : "<<c<<"\n";
+
+        d = atn_rr(P , N);
+        cout<<"Round Robin with time quantum δ = 2 time units   : "<<d<<"\n";
+
+        e = atn_hrn(P , N);
+        cout<<"Highest response-ratio next (HRN)                : "<<e<<"\n";
+
+        FILE *results = fopen("result", "w");
+        fprintf(results, "%f, %f, %f, %f, %f\n", a, b, c, d, e);
+        fclose(results);
         // vector<process> v(5);
 
         // v[0].id = 1;
