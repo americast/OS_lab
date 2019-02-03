@@ -3,6 +3,10 @@
 #include <sstream>
 #include <bits/stdc++.h>
 #include <queue>
+#include <math.h>
+
+#define E 2.731
+#define MEAN 5
 
 using namespace std;
 
@@ -25,11 +29,18 @@ void genCPUBursts(vector<process> &P , int N)
         P[i].CPU_burst =(rand()%20)+1 ; 
     }
 }
+
 void genArrTime(vector<process> &P , int N)
 {
     P[0].arr_time = 0;
+    srand(time(0));
     for(int i = 1; i<N; i++)
     {
+
+        // float R = (rand()%100000)/100000.0;
+        // cout<<R<<"   :    ";
+        // cout<<(-1.0 / MEAN ) * log(R) /log(E)<<" \n";
+
         P[i].arr_time = P[i-1].arr_time+(rand()%10)+1;
     }
 }
@@ -44,12 +55,12 @@ float atn_fcfs(vector<process> P , int N)
         if(i+1<N)
         {
             cout<< "Process Num : "<<P[i].id<<" start time : "<<curr_time<<"\n";
-            curr_time = (P[i+1].arr_time>P[i].arr_time+P[i].CPU_burst)? P[i+1].arr_time : P[i].arr_time+P[i].CPU_burst ; 
+            curr_time = (P[i+1].arr_time>curr_time+P[i].CPU_burst)? P[i+1].arr_time : curr_time+P[i].CPU_burst ; 
         }
         else
         {
             cout<< "Process Num : "<<P[i].id<<" start time : "<<curr_time<<"\n";
-            curr_time = P[i].arr_time+P[i].CPU_burst;
+            curr_time = curr_time+P[i].CPU_burst;
         }
     }
     cout<<"FCFS end\n";
@@ -183,41 +194,82 @@ bool compareRN(process i1, process i2)
 
 float atn_hrn(vector<process> P ,  int N)
 {
-    int i = 0, atn = 0,count = 0;
-    curr_time = 0;
-    cout<<"\n\nhrn start\n";
+    int i = 0 , atn = 0, count = 0;
+    curr_time  = 0;
+    cout<<"\n\nHRN start\n";
     vector <process> pq;
+
     while(count<N)
     {
-        while(i<N&&P[i].arr_time<=curr_time)
+        while(i<N && P[i].arr_time<=curr_time)
         {
-            cout<<"pushing "<<P[i].id<<" in pq at arr time "<<P[i].arr_time<<" curr time "<<curr_time<<"\n";
             pq.push_back(P[i]);
             i++;
         }
-        sort(pq.begin(), pq.end(), compareRN);
-        if(pq.size())
+        
+        if(i<N && !pq.size())
         {
-            // process F = ;
-            // pq.pop_front();
-            cout<<"doing process "<<pq[0].id<<" at "<<curr_time<<"and hrn "<<(float)(curr_time-pq[0].arr_time+pq[0].CPU_burst)/pq[0].CPU_burst<<"\n";
-            if(pq[0].CPU_burst < 2)
-            {
-                cout<<"done: "<<pq[0].id<<"\n";
-                count++;
-                atn = curr_time + 1 - pq[0].arr_time;
-                pq.erase(pq.begin()+0);
-            }
-            else
-            {
-                pq[0].CPU_burst--;
-                // pq.push_back(F);
-            }
+            curr_time = P[i].arr_time;
+            pq.push_back(P[i++]);
         }
-        curr_time++;
+        sort(pq.begin(),pq.end(),compareRN);
+        for(int j =0; j<pq.size(); j++)
+        {
+            cout<<pq[j].id<<"\n";
+        }
+        process P = pq[0];
+        pq.erase(pq.begin());
+        count++;
+        cout<< "Process Num : "<<P.id<<" start time : "<<curr_time<<"\n";
+        atn = curr_time - P.arr_time + P.CPU_burst;
+        curr_time = curr_time + P.CPU_burst;
     }
-    cout<<"\n\nhrn end\n";
+    while(pq.size())
+    {
+        process P = pq[0];
+        pq.erase(pq.begin());
+        cout<< "Process Num : "<<P.id<<" start time : "<<curr_time<<"\n";
+        atn = curr_time - P.arr_time + P.CPU_burst;
+        curr_time = curr_time + P.CPU_burst;
+    }
+
+    cout<<"HRN end\n";
     return((float)atn/N);
+    // int i = 0, atn = 0,count = 0;
+    // curr_time = 0;
+    // cout<<"\n\nhrn start\n";
+    // vector <process> pq;
+    // while(count<N)
+    // {
+    //     while(i<N&&P[i].arr_time<=curr_time)
+    //     {
+    //         cout<<"pushing "<<P[i].id<<" in pq at arr time "<<P[i].arr_time<<" curr time "<<curr_time<<"\n";
+    //         pq.push_back(P[i]);
+    //         i++;
+    //     }
+    //     sort(pq.begin(), pq.end(), compareRN);
+    //     if(pq.size())
+    //     {
+    //         // process F = ;
+    //         // pq.pop_front();
+    //         cout<<"doing process "<<pq[0].id<<" at "<<curr_time<<"and hrn "<<(float)(curr_time-pq[0].arr_time+pq[0].CPU_burst)/pq[0].CPU_burst<<"\n";
+    //         if(pq[0].CPU_burst < 2)
+    //         {
+    //             cout<<"done: "<<pq[0].id<<"\n";
+    //             count++;
+    //             atn = curr_time + 1 - pq[0].arr_time;
+    //             pq.erase(pq.begin()+0);
+    //         }
+    //         else
+    //         {
+    //             pq[0].CPU_burst--;
+    //             // pq.push_back(F);
+    //         }
+    //     }
+    //     curr_time++;
+    // }
+    // cout<<"\n\nhrn end\n";
+    // return((float)atn/N);
 }
 
 int main() 
@@ -288,9 +340,9 @@ int main()
         // v[4].CPU_burst = 2;
 
         // cout<<"Non-preemptive First Come First Serve (FCFS)     : "<<atn_fcfs(v , v.size())<<"\n";
-        // cout<<"Non-preemptive Shortest Job First                : "<<atn_nsjf(v , v.size())<<"\n";
-        // cout<<"Pre-emptive Shortest Job First                   : "<<atn_sjf(v , v.size())<<"\n";
-        // cout<<"Round Robin with time quantum δ = 2 time units   : "<<atn_rr(v , v.size())<<"\n";
+        // // cout<<"Non-preemptive Shortest Job First                : "<<atn_nsjf(v , v.size())<<"\n";
+        // // cout<<"Pre-emptive Shortest Job First                   : "<<atn_sjf(v , v.size())<<"\n";
+        // // cout<<"Round Robin with time quantum δ = 2 time units   : "<<atn_rr(v , v.size())<<"\n";
         // cout<<"Highest response-ratio next (HRN)                : "<<atn_hrn(v , v.size())<<"\n";
 
 
