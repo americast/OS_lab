@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 import os
+import pudb
 
 os.system("rm result")
 os.system("g++ a3_42.cpp && ./a.out < in")
@@ -49,4 +50,13 @@ plt.plot(x,y_4, label="HRN")
 plt.xlabel("Number of processes")
 plt.ylabel("Average turnout times")
 plt.legend()
+plt.xticks(x)
+plt.yticks(np.append(y_0, [y_1, y_2, y_3, y_4]))
+plt.gca().yaxis.grid(True)
+plt.gca().xaxis.grid(True)
+# pu.db
+# import matplotlib
+# matplotlib.rc('xtick', labelsize=20) 
+plt.rc('ytick', labelsize=3)
+
 plt.show()
