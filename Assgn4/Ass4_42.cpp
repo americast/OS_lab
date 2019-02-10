@@ -34,13 +34,14 @@ void catcher(int signum)
         sigset_t myset;
         sigemptyset(&myset);
 
-        printf("Suspending thread\n");
+        printf("\nSuspending thread %d\n", pthread_self());
 
         sigsuspend(&myset);
+        printf("\nThread %d was sleeping\n", pthread_self());
     }
     else
     {
-        printf("Waking thread\n");
+        printf("\nWaking thread %d\n", pthread_self());
 
         return;
     }
@@ -138,13 +139,13 @@ void* schedule(void* param)
     int i;
     for (i = 0; i < num_p; i++)
     {
-    	printf("Inside schedule. killing %d producer\n", i);
+    	printf("Inside schedule. Suspending %d producer\n", i);
         pthread_kill(P_threads[i], SIGUSR1);
     }
 
     for (i = 0; i < num_c; i++)
     {
-    	printf("Inside schedule. killing %d consumer\n", i);
+    	printf("Inside schedule. Suspending %d consumer\n", i);
         pthread_kill(C_threads[i], SIGUSR1);
     }
     sleep(1);
@@ -174,8 +175,8 @@ void* schedule(void* param)
         if (!ready_queue.size())
             break;
         pthread_t top = ready_queue[0].tid;
-        pthread_kill(top, SIGUSR2);
-        printf("\nKilled %c%d\n",ready_queue[0].worker,ready_queue[0].id);
+        printf("\nSuspending %c%d\n",ready_queue[0].worker,ready_queue[0].id);
+        pthread_kill(top, SIGUSR1);
         if(ready_queue[0].worker=='p')
         {
         	status[ready_queue[0].id] = 0;
@@ -184,8 +185,6 @@ void* schedule(void* param)
         {
         	status[ready_queue[0].id+num_p] = 0;
         }
-        // ready_queue[0].status = 0;
-        if(1)
         {
 	        pthread_t reporter;
 	        pthread_attr_t attr_R;
@@ -196,26 +195,25 @@ void* schedule(void* param)
         threads thread = ready_queue[0];
         ready_queue.erase(ready_queue.begin());
         ready_queue.push_back(thread);
-        sleep(QUANTUM);
-        pthread_kill(top, SIGUSR1);
-        printf("Activated %c%d\n",ready_queue[0].worker,ready_queue[0].id);
+        printf("\nResuming %c%d\n",ready_queue[0].worker,ready_queue[0].id);
+        pthread_kill(top, SIGUSR2);
         // ready_queue[0].status = 1;
         if(ready_queue[0].worker=='p')
         {
-        	status[ready_queue[0].id] = 1;
+            status[ready_queue[0].id] = 1;
         }
         else
         {
-        	status[ready_queue[0].id+num_p] = 1;
+            status[ready_queue[0].id+num_p] = 1;
         }
-        if(1)
         {
-	        pthread_t reporter;
-	        pthread_attr_t attr_R;
-	        pthread_attr_init(&attr_R);
-	        pthread_create(&reporter,&attr_R,report,NULL); 
-	        pthread_join(reporter,NULL);
-	    }
+            pthread_t reporter;
+            pthread_attr_t attr_R;
+            pthread_attr_init(&attr_R);
+            pthread_create(&reporter,&attr_R,report,NULL); 
+            pthread_join(reporter,NULL);
+        }
+        sleep(QUANTUM);
         
     }
 
