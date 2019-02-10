@@ -34,14 +34,14 @@ void catcher(int signum)
         sigset_t myset;
         sigemptyset(&myset);
 
-        printf("\nSuspending thread %d\n", pthread_self());
+        printf("\nSuspending thread %lu\n", pthread_self());
 
         sigsuspend(&myset);
-        printf("\nThread %d was sleeping\n", pthread_self());
+        printf("\nThread %lu was sleeping\n", pthread_self());
     }
     else
     {
-        printf("\nWaking thread %d\n", pthread_self());
+        printf("\nWaking thread %lu\n", pthread_self());
 
         return;
     }
@@ -148,7 +148,7 @@ void* schedule(void* param)
     	printf("Inside schedule. Suspending %d consumer\n", i);
         pthread_kill(C_threads[i], SIGUSR1);
     }
-    sleep(1);
+    sleep(QUANTUM);
 
     for (i = 0; i < num_p; i++)
     {
