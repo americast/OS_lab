@@ -175,7 +175,7 @@ void* schedule(void* param)
         if (!ready_queue.size())
             break;
         pthread_t top = ready_queue[0].tid;
-        printf("\nSuspending %c%d\n",ready_queue[0].worker,ready_queue[0].id);
+        printf("\nSuspending %c%d i.e. %lu\n",ready_queue[0].worker,ready_queue[0].id, ready_queue[0].tid);
         pthread_kill(top, SIGUSR1);
         if(ready_queue[0].worker=='p')
         {
@@ -195,7 +195,7 @@ void* schedule(void* param)
         threads thread = ready_queue[0];
         ready_queue.erase(ready_queue.begin());
         ready_queue.push_back(thread);
-        printf("\nResuming %c%d\n",ready_queue[0].worker,ready_queue[0].id);
+        printf("\nResuming %c%d: %lu\n",ready_queue[0].worker,ready_queue[0].id, ready_queue[0].tid);
         pthread_kill(top, SIGUSR2);
         // ready_queue[0].status = 1;
         if(ready_queue[0].worker=='p')
