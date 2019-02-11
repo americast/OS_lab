@@ -17,7 +17,7 @@
 #include <unistd.h>
 using namespace std;
 
-#define M 80
+#define M 800
 #define QUANTUM 1
 #define N 10
 
@@ -65,6 +65,7 @@ void* producer(void* param)
 {
     signal(SIGUSR1, catcher);
     signal(SIGUSR2, catcher);
+    pthread_kill(pthread_self(), SIGUSR1);
     
     int i = 0;
     while(i < 1000)
@@ -75,6 +76,18 @@ void* producer(void* param)
             i+=1;
         }
 
+    sigset_t mask;
+    sigset_t org_mask;
+    sigemptyset (&mask);
+    sigaddset (&mask, SIGUSR1);
+
+    if (sigprocmask(SIG_BLOCK, &mask, &org_mask) < 0)
+    {
+            perror ("sigprocmask");
+            exit(EXIT_FAILURE);
+    }
+    pthread_mutex_t rq_mutex;
+    pthread_mutex_lock(&rq_mutex);
     for(int i = 0; i<ready_queue.size();i++)
         if (ready_queue[i].tid == pthread_self())
         {
@@ -82,6 +95,15 @@ void* producer(void* param)
             ready_queue.erase(ready_queue.begin() + i);
             break;
         }
+
+    sigemptyset(&mask);
+    if (sigprocmask(SIG_BLOCK, &org_mask, NULL) < 0)
+    {
+            perror ("sigprocmask");
+            exit(EXIT_FAILURE);
+    }
+    pthread_mutex_unlock(&rq_mutex);
+
     pthread_exit(0);
 }
 
@@ -90,6 +112,7 @@ void* consumer(void* param)
 {
     signal(SIGUSR1, catcher);
     signal(SIGUSR2, catcher);
+    pthread_kill(pthread_self(), SIGUSR1);
     
     while(1)
         if (pos > 0)
@@ -127,6 +150,7 @@ void* report(void* param)
 
     }
     printf("\n");
+    printf("Number of elements in buffer : %d\n", pos);
     pthread_exit(0);
 
 }
@@ -135,18 +159,6 @@ void* report(void* param)
 void* schedule(void* param)
 {
     int i;
-    for (i = 0; i < num_p; i++)
-    {
-        printf("Inside schedule. Suspending %d producer %lu\n", i, P_threads[i]);
-        pthread_kill(P_threads[i], SIGUSR1);
-    }
-
-    for (i = 0; i < num_c; i++)
-    {
-        printf("Inside schedule. Suspending %d consumer %lu\n", i, C_threads[i]);
-        pthread_kill(C_threads[i], SIGUSR1);
-    }
-
     sleep(QUANTUM);
     
     for (i = 0; i < num_p; i++)
@@ -175,11 +187,11 @@ void* schedule(void* param)
             break;
         pthread_t top = ready_queue[0].tid;
         printf("\nResuming %c%d: %lu\n",ready_queue[0].worker,ready_queue[0].id, ready_queue[0].tid);
-        pthread_kill(top, SIGUSR2);
         if(ready_queue[0].worker=='p')
             status[ready_queue[0].id] = 1;
         else
             status[ready_queue[0].id+num_p] = 1;
+        pthread_kill(top, SIGUSR2);
 
         // Restricting scope
         {
@@ -190,17 +202,21 @@ void* schedule(void* param)
             pthread_join(reporter,NULL);
         }
         sleep(QUANTUM);
-        printf("Suspending %c%d i.e. %lu\n",ready_queue[0].worker,ready_queue[0].id, ready_queue[0].tid);
-        pthread_kill(top, SIGUSR1);
+        if (top == ready_queue[0].tid)
+        {
+            printf("\nInside top\n");
+            printf("Suspending %c%d i.e. %lu\n",ready_queue[0].worker,ready_queue[0].id, ready_queue[0].tid);
+            pthread_kill(top, SIGUSR1);
 
-        if(ready_queue[0].worker=='p')
-            status[ready_queue[0].id] = 0;
-        else
-            status[ready_queue[0].id+num_p] = 0;
+            if(ready_queue[0].worker=='p')
+                status[ready_queue[0].id] = 0;
+            else
+                status[ready_queue[0].id+num_p] = 0;
 
-        threads thread = ready_queue[0];
-        ready_queue.erase(ready_queue.begin());
-        ready_queue.push_back(thread);
+            threads thread = ready_queue[0];
+            ready_queue.erase(ready_queue.begin());
+            ready_queue.push_back(thread);
+        }
         // Restricting scope
         {
             pthread_t reporter;
