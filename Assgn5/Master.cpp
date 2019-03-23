@@ -68,10 +68,15 @@ int main()
 	// 	}
 	// }
 
+	char key_3_str[100], key_4_str[100];
+
+	sprintf(key_3_str,"%d", key_3);
+	sprintf(key_4_str,"%d", key_4);
+
 	sched_pid = fork();
 	if(sched_pid == 0)
 	{
-        execlp("./scheduler", "./scheduler", (char *) NULL);
+        execlp("./scheduler", "./scheduler", key_3_str, key_4_str, (char *) NULL);
         printf("Failed to start scheduler \n");
         exit(EXIT_FAILURE);
     }
@@ -99,7 +104,7 @@ int main()
 	}
     printf("IN MASTER 3\n");
     // printf("Val of semaphore %d\n", *semaphore);
-    sem_wait(semaphore);
+    // sem_wait(semaphore);
     // sem_destroy(semaphore);
     printf("Master ending\n");
     //delete others
