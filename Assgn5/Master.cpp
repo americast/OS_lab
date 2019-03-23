@@ -19,9 +19,6 @@ typedef struct {
 int main()
 {
 	int k, m, f;
-	// sem_t *semaphore = sem_open("FLAG_END", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, 0);
-	sem_t *semaphore;
-	sem_init(semaphore,777,0);
 
 	cout<<"Enter the number of processes : ";
 	cin>>k;
@@ -29,15 +26,17 @@ int main()
 	cin>>m;
 	cout<<"Enter the total number of main frames in memory : ";
 	cin>>f;
-	pid_t sched_pid, mmu_pid, process_pid[k];
-	int req_pages[k];
 
-	// process_pid = (pid_t *)malloc(sizeof(pid_t)*k);
+	key_t key_1 = ftok("SM1",65); 
 
-	// key_t key = ftok("shmfile",65); 
-
-	// int shmid = shmget(key,k*m*sizeof(page_entry),0666|IPC_CREAT); 
+	int shmid_1 = shmget(key_1, k*m*sizeof(page_entry), 0666|IPC_CREAT); 
 	  
+
+
+	key_t key_2 = ftok("SM2",65); 
+
+	int shmid_2 = shmget(key_2, sizeof(int) + f * sizeof(int), 0666|IPC_CREAT); 
+
     // // shmat to attach to shared memory 
     // char *str = (char*) shmat(shmid,(void*)0,0); 
   
@@ -48,6 +47,15 @@ int main()
       
     // //detach from shared memory  
     // shmdt(str); 
+
+    key_t key_3 = ftok("MQ1", 65);
+    int msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
+
+
+    key_t key_4 = ftok("MQ2", 65);
+    int msgid_2 = msgget(key_4, 0666 | IPC_CREAT);
+
+
 
 	// page_entry **page_table = (page_entry **)malloc(sizeof(page_entry*)*k);
 	// for(int i =0; i<k; i++)
