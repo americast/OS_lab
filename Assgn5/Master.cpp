@@ -11,11 +11,12 @@
 #include <sys/msg.h>
 using namespace std;
 
-typedef struct {
+struct page_entry{
 	int page;
 	int frame;
-	short int validity;
-}page_entry;
+	short int validity = -1;
+	int use = 0;
+};
 
 pid_t sched_pid, mmu_pid;
 
