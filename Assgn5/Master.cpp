@@ -22,21 +22,7 @@ pid_t sched_pid, mmu_pid;
 
 void catcher(int signum)
 {
-    // if (signum == SIGUSR1)
-    // {
-    //     sigset_t myset;
-    //     sigemptyset(&myset);
 
-    //     printf("Suspending thread %lu\n", pthread_self());
-
-    //     sigsuspend(&myset);
-    //     printf("Thread %lu was sleeping\n", pthread_self());
-    // }
-    // else
-    // {
-    //     printf("Waking thread %lu\n", pthread_self());
-    //     return;
-    // }
     kill(sched_pid, SIGKILL);
     kill(mmu_pid, SIGKILL);
     cout<<"MASTER TERMINATES";
@@ -116,6 +102,4 @@ int main()
     {
     	sleep(1);
     }
-
-
 }
