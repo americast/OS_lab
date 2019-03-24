@@ -26,23 +26,18 @@ int main(int argc, char **argv)
 
 	ready_queue process;
 	message_queue message;
-
-	// printf("SCHEDULER INITIATED \n");
 	
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int mq_id = msgget(mq_t, 0666 | IPC_CREAT);
-
-	// printf("SCHEDULER INITIATED \n");
 	
 	while(1)
 	{
 		printf("INSIDE LOOP\n");
 		int loop = 0;
-		while(loop<10)
+		while(loop<20)
 		{
 			printf("Loop num :%d\n", loop);
 			if(msgrcv(rq_id, &process, sizeof(process), 1, IPC_NOWAIT)<0)
-			// if (errno == ENOMSG)
 			{
 				usleep(250000);
 				loop++;
@@ -52,15 +47,14 @@ int main(int argc, char **argv)
 				break;
 			}
 		}
-		if(loop == 10)
+		if(loop == 20)
 		{
-			pid_t master = getppid();
-			kill(master,SIGUSR1);
 			printf("No more process left. Signalling Master!\n");
+			kill(getppid(),SIGUSR1);
 			break;
 		}
 		printf("SCHED :: Process executing is : %d - %d \n", process.id, process.pid);
-		kill(process.pid,SIGUSR1);
+		kill(process.pid,SIGUSR2); // start process
 		msgrcv(mq_id, &message, sizeof(message), 1, 0);
 		printf("SCHED :: Message is : %s\n", message.msg);
 		if(strcmp(message.msg,"PAGE FAULT HANDLED")==0)

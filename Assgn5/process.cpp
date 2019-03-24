@@ -41,8 +41,10 @@ int main(int argc, char **argv)
 
 	key_t rq_t = *((key_t*)argv[1]);
 	key_t pg_t = *((key_t*)argv[2]);
-	int total_pages = *((int*)argv[3]);
 	int page_ref_string_len = *((int*)argv[3]);
+	int total_pages = *((int*)argv[4]);
+	int id = *((int*)argv[5]);
+
 	printf("PROCESS INITIATED \n");
 
 	ready_queue process;
@@ -51,6 +53,8 @@ int main(int argc, char **argv)
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);
 
 	process.pid = getpid();
+	process.id = id;
+
 
 	msgsnd(rq_id, &process, sizeof(process), 0);
 	// signal(SIGUSR1, catcher);
@@ -60,7 +64,7 @@ int main(int argc, char **argv)
 	while(count<page_ref_string_len)
 	{
 		printf("INSIDE LOOP\n");
-		int page_num = rand()%total_pages;
+		int page_num = (rand()%m)*m+i;
 		int frame_num;
 		msgsnd(pg_id, &page_num, sizeof(int), 0);
 		msgrcv(pg_id, &frame_num, sizeof(int), 1, 0);
@@ -69,12 +73,11 @@ int main(int argc, char **argv)
 		{
 			if(frame_num == -1)
 			{
-				// count --;
 				kill(getpid(), SIGUSR1);
 			}
 			else
 			{
-				exit(EXIT_SUCCESS);
+				exit(EXIT_FAILURE);
 			}
 		}
 		else
