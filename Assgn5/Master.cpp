@@ -64,18 +64,18 @@ int main()
 	cout<<"Enter the total number of main frames in memory : ";
 	cin>>f;
 	cout<<"Enter the size of TLB : ";
-	cin>>f;
+	cin>>s;
 
 	pid_t process_pid[k];
 
-	std::unordered_map<int, int> *TLB_ref;
-	std::unordered_map<int, int> TLB1;
+	// std::unordered_map<int, int> *TLB_ref;
+	// std::unordered_map<int, int> TLB1;
 
 	key_t key_1 = ftok("SM1",65); 
 	int shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	  
 	key_t key_2 = ftok("SM2",65); 
-	int shmid_2 = shmget(key_2, f * sizeof(std::unordered_map<int, int>), 0666|IPC_CREAT); 
+	int shmid_2 = shmget(key_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
     key_t key_3 = ftok("MQ1", 65);
     int msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
@@ -120,10 +120,12 @@ int main()
 
     if((mmu_pid =fork())== 0)
     {
-    	char s_str[10], m_str[0];
+    	char s_str[10], m_str[10], k_str[10], f_str[10];
     	sprintf(s_str, "%d", s);
     	sprintf(m_str, "%d", m);
-    	execlp("./mmu", "./mmu", key_4_str, key_5_str, key_1_str, key_2_str, s_str, m_str, (char *) NULL); // send others
+    	sprintf(k_str, "%d", k);
+    	sprintf(f_str, "%d", f);
+    	execlp("./mmu", "./mmu", key_4_str, key_5_str, key_1_str, key_2_str, s_str, m_str, k_str, f_str, (char *) NULL); // send others
     	printf("Failed to start mmu \n");
     	exit(EXIT_FAILURE);
     }

@@ -43,6 +43,7 @@ int main(int argc, char **argv)
 	key_t pg_t = *((key_t*)argv[2]);
 	int page_ref_string_len = *((int*)argv[3]);
 	int total_pages = *((int*)argv[4]);
+	int m = total_pages;
 	int id = *((int*)argv[5]);
 
 	printf("PROCESS INITIATED \n");
@@ -64,7 +65,7 @@ int main(int argc, char **argv)
 	while(count<page_ref_string_len)
 	{
 		printf("INSIDE LOOP\n");
-		int page_num = (rand()%m)*m+i;
+		int page_num = (rand()%m)*m+id;
 		int frame_num;
 		msgsnd(pg_id, &page_num, sizeof(int), 0);
 		msgrcv(pg_id, &frame_num, sizeof(int), 1, 0);
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
 			count ++;
 		}
 	}
-	int reply = -9;
+	int reply = -9*m + id;
 	msgsnd(pg_id, &reply, sizeof(reply), 0);
 	printf("SCHEDULER END\n");
 	exit(EXIT_SUCCESS); 
