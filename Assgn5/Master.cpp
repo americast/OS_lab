@@ -14,7 +14,12 @@ using namespace std;
 struct page_entry{
 	int page;
 	int frame;
-	short int validity = -1;
+	int use = 0;
+};
+
+struct main_mem_frame{
+	int frame;
+	int validity;
 	int use = 0;
 };
 
@@ -48,11 +53,10 @@ int main()
 	int shmid_1 = shmget(key_1, k*m*sizeof(page_entry), 0666|IPC_CREAT); 
 	  
 	key_t key_2 = ftok("SM2",65); 
-	int shmid_2 = shmget(key_2, sizeof(int) + f * sizeof(int), 0666|IPC_CREAT); 
+	int shmid_2 = shmget(key_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
     key_t key_3 = ftok("MQ1", 65);
     int msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
-
 
     key_t key_4 = ftok("MQ2", 65);
     int msgid_2 = msgget(key_4, 0666 | IPC_CREAT);
@@ -66,6 +70,18 @@ int main()
 	sprintf(key_3_str,"%d", key_3);
 	sprintf(key_4_str,"%d", key_4);
 	sprintf(key_5_str,"%d", key_5);
+
+	page_entry *pge = (page_entry*) shmat(SM_1,(void*)0,0);
+	main_mem_frame *mmf = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+
+	for (int i = 0; i < f; i++)
+	{
+		mmf[i].validity = -1;
+		mmf[i].use = 0;
+	}
+
+	for (int i = 0; i < k * m; i++)
+		pge[i].validity = -1;
 
 	sched_pid = fork();
 	if(sched_pid == 0)

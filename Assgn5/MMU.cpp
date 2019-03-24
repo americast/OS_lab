@@ -12,10 +12,14 @@ using namespace std;
 struct page_entry{
 	int page;
 	int frame;
-	short int validity;
 	int use;
 };
 
+struct main_mem_frame{
+	int frame;
+	int validity;
+	int use = 0;
+};
 
 typedef struct mq {
 	char msg[20];
@@ -32,29 +36,29 @@ int count = 0;
 
 int handlePageFault(int frame_no, int i, int m, int s, int SM_1, int SM_2, int key_MQ_2)
 {
-	int *fm = (int*) shmat(SM_2,(void*)0,0);
+	main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 	int n = fm[0];
 	page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
 	int found = 0;
 	int min_use = INT_MAX;
 	int min_use_pos = 0;
-	for (int j = 0; j < m; j++)
+	int found_pos = 0;
+	for (int j = 0; j < f; j++)
 	{
-		if (pg[i*j*sizeof(page_entry)].validity == -1)
+		if (fm[j].validity == -1)
 		{
-			pg[i*j*sizeof(page_entry)].frame = frame_no;
-			pg[i*j*sizeof(page_entry)].page = fm[n];
-			pg[i*j*sizeof(page_entry)].validity = 1;
-			pg[i*j*sizeof(page_entry)].use = 0;
+			fm[j].frame = frame_no;
+			fm[j].validity = 1;
+			fm[j].use = 0;
 			found = 1;
-			fm[0]--;
+			found_pos = j;
 			break;
 		}
 		else
 		{
-			if (pg[i*j*sizeof(page_entry)].use < min_use)
+			if (fm[j].use < min_use)
 			{
-				min_use = pg[i*j*sizeof(page_entry)].use;
+				min_use = fm[j].use;
 				min_use_pos = j;
 			}
 		}
@@ -63,18 +67,29 @@ int handlePageFault(int frame_no, int i, int m, int s, int SM_1, int SM_2, int k
 
 	if (!found)
 	{
-		pg[i*min_use_pos*sizeof(page_entry)].frame = frame_no;
-		pg[i*min_use_pos*sizeof(page_entry)].page = fm[n];
-		pg[i*min_use_pos*sizeof(page_entry)].validity = 1;
-		pg[i*min_use_pos*sizeof(page_entry)].use = 0;
+		fm[min_use_pos].frame = frame_no;
+		fm[min_use_pos].validity = 1;
+		fm[min_use_pos].use = 0;
 		found = 1;
+		found_pos = min_use_pos;
 	}
 
 
 
 	int lookup = frame_no % s;
 	TLB[lookup].frame_no == frame_no;
-	TLB[lookup].memory_loc = fm[n];
+	TLB[lookup].memory_loc = found_pos;
+
+	for (int g = 0; g < m; g++)
+	{
+		if (pg[i * m + g].validity == -1)  // eta ektu dekhte hbe
+		{
+			pg[i * m + g].validity = 1;
+			pg[i * m + g].page = found_pos;
+			pg[i * m + g].frame = frame_no;
+			break;
+		}
+	}
 
 	
 	int pid;	// Need to know how to get this

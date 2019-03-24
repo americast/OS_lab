@@ -17,7 +17,7 @@
 #include <unistd.h>
 using namespace std;
 
-#define M 800
+#define M 80
 #define QUANTUM 1
 #define N 10
 
