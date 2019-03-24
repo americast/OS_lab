@@ -13,16 +13,25 @@ typedef struct rq {
     pid_t pid; 
 } ready_queue; 
 
+int global_num = 0;
+
 void catcher(int signum)
 {
-    if (signum == SIGUSR1)
-    {
-    	kill(getpid(), SIGSTOP);
-    }
-    else
-    {
- 		kill(getpid(), SIGCONT);
-    }
+	if (signum == SIGUSR1)
+	{
+	    sigset_t myset;
+	    sigemptyset(&myset);
+
+	    printf("Suspending process %lu\n", getpid());
+
+	    sigsuspend(&myset);
+	    printf("Process %lu was sleeping\n", getpid());
+	}
+	else
+	{
+	    printf("Waking process %lu\n", getpid());
+	    return;
+	}
 }
 
 int main(int argc, char **argv)
