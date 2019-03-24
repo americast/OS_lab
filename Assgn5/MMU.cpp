@@ -16,13 +16,19 @@ struct page_entry{
 	int use;
 };
 
+
+typedef struct mq {
+	char msg[20];
+} message_queue;
+
 struct map_
 {
 	int frame_no;
 	int memory_loc;
 };
-int s = 128;
-map_ TLB[128];
+int s;
+map_ *TLB;
+int count = 0;
 
 int handlePageFault(int frame_no, int i, int m, int s, int SM_1, int SM_2, int key_MQ_2)
 {
@@ -96,13 +102,13 @@ int checkPT(int frame_no, int i, int m, int SM_1, int &new_frame_no)
 	return found;
 }
 
-int checkTLB(int frame_no, int &new_frame_no)
+int checkTLB(int page_num, int &frame_num)
 {
-	int lookup = frame_no % s;
+	int lookup = page_num % s;
 
-	if (TLB[lookup].frame_no == frame_no)
+	if (TLB[lookup].page_num == page_num)
 	{
-		new_frame_no = TLB[lookup].memory_loc;
+		frame_num = TLB[lookup].memory_loc;
 		return 1;
 	}
 	return 0;
@@ -110,10 +116,14 @@ int checkTLB(int frame_no, int &new_frame_no)
 
 int main(int argc, char* argv[])
 {
+	signal(SIGUSR1,catcher);
 	printf("HI I AM MMU\n");
-	sleep(100);
+	// sleep(100);
+	kill(getpid(), SIGUSR1);
 
-	int i, m; // Need to get these
+	message_queue message;
+
+	int id, m; // Need to get these, also value of s
 
 	for (int i = 0; i < s; i++)
 	{
@@ -125,6 +135,8 @@ int main(int argc, char* argv[])
 	int key_MQ_3 = atoi(argv[2]);
 	int key_SM_1 = atoi(argv[3]);
 	int key_SM_2 = atoi(argv[4]);
+	s = *((int*)argv[5]);
+	TLB = (map_ *)malloc(sizeof(map_)*s);
 
 	int MQ_2 = msgget(key_MQ_2, 0666 | IPC_CREAT);
 	int MQ_3 = msgget(key_MQ_3, 0666 | IPC_CREAT);
@@ -132,25 +144,34 @@ int main(int argc, char* argv[])
 	int SM_1 = shmget(key_SM_1, 1024, 0666|IPC_CREAT); 
 	int SM_2 = shmget(key_SM_2, 1024, 0666|IPC_CREAT); 
 
-	int frame_no;
+	int page_num;
 	while(1)
 	{
-		msgrcv(MQ_3, &frame_no, sizeof(int), 1, 0);
-		int updated_frame_no = -1;
-		if (checkTLB(frame_no, updated_frame_no))
+		count ++; 
+		msgrcv(MQ_3, &page_num, sizeof(int), 1, 0);
+		if(page_num == -9)
 		{
-			msgsnd(MQ_3, &updated_frame_no, sizeof(updated_frame_no), 0); 
+			update_ff();
+			message.msg = "TERMINATED"
+			msgsnd(MQ_2, &message, sizeof(message), 0); 
 		}
-		if (checkPT(frame_no, i, m, SM_1, updated_frame_no))
+		int frame_num = -1;
+		if (checkTLB(page_num, frame_num))
 		{
-			msgsnd(MQ_3, &updated_frame_no, sizeof(updated_frame_no), 0); 
+			msgsnd(MQ_3, &frame_num, sizeof(frame_num), 0); 
 			continue;
 		}
-		if (fork() == 0)
+		if (checkPT(page_num, id, m, SM_1, frame_num))
 		{
-			handlePageFault(frame_no, i, m, s, SM_1, SM_2, key_MQ_2);
+			msgsnd(MQ_3, &frame_num, sizeof(frame_num), 0); 
+			continue;
 		}
-		msgsnd(MQ_3, &updated_frame_no, sizeof(updated_frame_no), 0); 
+		frame_num = -1;
+		msgsnd(MQ_3, &frame_num, sizeof(frame_num), 0); 
+
+		handlePageFault(frame_no, i, m, s, SM_1, SM_2, key_MQ_2);
+		message.msg = "PAGE FAULT HANDLED";
+		msgsnd(MQ_2, &message, sizeof(message), 0); 
 	}
 
 }
