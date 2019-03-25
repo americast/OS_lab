@@ -85,6 +85,7 @@ int main()
     int msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
     msgctl(msgid_3, IPC_RMID, NULL); 
     msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
+    
     page_entry *pge = (page_entry*) shmat(shmid_1,(void*)0,0);
     main_mem_frame *mmf = (main_mem_frame*) shmat(shmid_2,(void*)0,0);
 
@@ -124,7 +125,7 @@ int main()
     	sprintf(m_str, "%d", m);
     	sprintf(k_str, "%d", k);
     	sprintf(f_str, "%d", f);
-    	execlp("./mmu", "./mmu", key_4_str, key_5_str, key_1_str, key_2_str, s_str, m_str, k_str, f_str, (char *) NULL); // send others
+    	execlp("xterm", "xterm", "-hold", "-e","./mmu", key_4_str, key_5_str, key_1_str, key_2_str, s_str, m_str, k_str, f_str, (char *) NULL); // send others
     	printf("Failed to start mmu \n");
     	exit(EXIT_FAILURE);
     }

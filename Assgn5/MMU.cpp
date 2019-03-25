@@ -190,10 +190,13 @@ int main(int argc, char* argv[])
 	}
 
 	cout<<"Here -4\n";
+	pg_num pg_num_here;
 	int page_num;
 	while(1)
 	{
-		msgrcv(MQ_3, &page_num, sizeof(int), 1, 0);
+		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num), 1, 0);
+
+		page_num = pg_num_here.type;
 
 		int id = page_num % m;
 
@@ -217,7 +220,8 @@ int main(int argc, char* argv[])
 			char fm_no_str[100];
 			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			int fm_no = atoi(fm_no_str);
-			msgsnd(MQ_3, &fm_no, sizeof(frame_num), 0); 
+			pg_num_here.type = fm_no;
+			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 			continue;
 		}
 		cout<<"Here 2\n";
@@ -227,13 +231,16 @@ int main(int argc, char* argv[])
 			char fm_no_str[100];
 			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			int fm_no = atoi(fm_no_str);
-			msgsnd(MQ_3, &fm_no, sizeof(frame_num), 0); 
+			pg_num_here.type = fm_no;
+			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 			continue;
 		}
-		msgsnd(MQ_3, &frame_num, sizeof(frame_num), 0); 
+		pg_num_here.type = frame_num;
+		msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);
+		cout<<"Sending page fault handled\n";
 		strcpy(message.msg, "PAGE FAULT HANDLED");
 		msgsnd(MQ_2, &message, sizeof(message), 0); 
 	}

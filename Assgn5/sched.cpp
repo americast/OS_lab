@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 			kill(getppid(),SIGUSR1);
 			break;
 		}
-		printf("SCHED :: Process executing is : %d - %d \n", process.id, process.pid);
+		printf("SCHED :: Process executing is : %d - %d \n", process.id, atoi(process.pid));
 		kill(atoi(process.pid),SIGUSR2); // start process
 		cout<<"Waiting for MMU\n";
 		msgrcv(mq_id, &message, sizeof(message), 1, 0);

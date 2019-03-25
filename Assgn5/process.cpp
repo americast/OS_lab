@@ -6,6 +6,7 @@
 #include <sys/ipc.h> 
 #include <sys/shm.h> 
 #include <sys/msg.h>
+#include <time.h>
 #include "headers.h"
 using namespace std;
 
@@ -61,6 +62,7 @@ int main(int argc, char **argv)
 	// signal(SIGUSR1, catcher);
 	// sleep(1);
 	kill(getpid(),SIGUSR1);
+	srand(time(NULL));
 	
 	int count = 0;
 	while(count<page_ref_string_len)
