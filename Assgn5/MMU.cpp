@@ -144,7 +144,7 @@ void LRU_update(int f)
 
 int main(int argc, char* argv[])
 {
-	printf("HI I AM MMU\n");
+	printf("HI I AM MMU\nand argc is: %d\n", argc);
 	cout<<"Here -1\n";
 	// sleep(100);
 	// kill(getpid(), SIGUSR1);
@@ -194,6 +194,7 @@ int main(int argc, char* argv[])
 	int page_num;
 	while(1)
 	{
+		cout<<"MQ_3 is "<<MQ_3<<endl;
 		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 1, 0);
 
 		page_num = pg_num_here.type;
