@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	int page_num;
 	while(1)
 	{
-		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num), 1, 0);
+		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 1, 0);
 
 		page_num = pg_num_here.type;
 
@@ -208,6 +208,7 @@ int main(int argc, char* argv[])
 		{
 			update_ff(id, m);
 			strcpy(message.msg, "TERMINATED");
+			cout<<"TERMINATE sent\n";
 			msgsnd(MQ_2, &message, sizeof(message), 0);
 			continue;
 		}

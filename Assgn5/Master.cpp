@@ -60,6 +60,8 @@ int main()
 	// std::unordered_map<int, int> TLB1;
 
 	key_t key_1 = ftok("SM1",1); 
+	if (key_1 < 0)
+		perror("key_1 ftok error");
 	int shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	  
 	key_t key_2 = ftok("SM2",2); 
@@ -85,7 +87,10 @@ int main()
     int msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
     msgctl(msgid_3, IPC_RMID, NULL); 
     msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
-    
+
+    cout<<"key_3 "<<key_3<<endl;
+    cout<<"key_4 "<<key_4<<endl;
+    cout<<"key_5 "<<key_5<<endl;
     page_entry *pge = (page_entry*) shmat(shmid_1,(void*)0,0);
     main_mem_frame *mmf = (main_mem_frame*) shmat(shmid_2,(void*)0,0);
 

@@ -30,5 +30,5 @@ struct rq {
 struct pg_num
 {
 	long type;
-	char txt[1];
+	char txt[100];
 };

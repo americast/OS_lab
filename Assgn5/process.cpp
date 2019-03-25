@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 		cout<<"Page num sent "<<page_num<<endl;
 		pg_num here;
 		here.type = page_num;
-		msgsnd(pg_id, &here, sizeof(pg_num), 0);
+		msgsnd(pg_id, &here, sizeof(here), 0);
 		msgrcv(pg_id, &here, sizeof(pg_num), 1, 0);
 		frame_num = here.type;
 		cout<<"Frame num received "<<frame_num<<endl;
