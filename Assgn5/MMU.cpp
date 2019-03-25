@@ -192,10 +192,30 @@ int main(int argc, char* argv[])
 	cout<<"Here -4\n";
 	pg_num pg_num_here;
 	int page_num;
+
+
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in servaddr, cliaddr; 
+
+	memset(&servaddr, 0, sizeof(servaddr)); 
+    memset(&cliaddr, 0, sizeof(cliaddr)); 
+      
+    servaddr.sin_family    = AF_INET; 
+    servaddr.sin_addr.s_addr = INADDR_ANY; 
+    servaddr.sin_port = htons(6680);
+    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  
+            sizeof(servaddr)) < 0 ) 
+    { 
+        perror("bind failed in MMU"); 
+        exit(EXIT_FAILURE); 
+    } 
 	while(1)
 	{
-		cout<<"MQ_3 is "<<key_MQ_3<<endl;
-		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 1, 0);
+		// cout<<"MQ_3 is "<<key_MQ_3<<endl;
+		// msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 1, 0);
+		socklen_t len = sizeof(cliaddr);
+		recvfrom(sockfd, &pg_num_here, sizeof(pg_num_here), 0, 
+					(struct sockaddr *) &cliaddr, &len); 
 
 		page_num = pg_num_here.type;
 
@@ -210,9 +230,14 @@ int main(int argc, char* argv[])
 			update_ff(id, m);
 			strcpy(message.msg, "TERMINATED");
 			cout<<"TERMINATE sent\n";
-			msgsnd(MQ_2, &message, sizeof(message), 0);
+    		servaddr.sin_port = htons(7433);
+			sendto(sockfd, &message, sizeof(message), 0, 
+						(const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+
+			// msgsnd(MQ_2, &message, sizeof(message), 0);
 			continue;
 		}
+		// servaddr.sin_port = htons(7763);
 		int frame_num = -1;
 		main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 		cout<<"Here 1\n";
@@ -223,7 +248,10 @@ int main(int argc, char* argv[])
 			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			int fm_no = atoi(fm_no_str);
 			pg_num_here.type = fm_no;
-			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			sendto(sockfd, &pg_num_here, sizeof(pg_num_here), 0, 
+				(const struct sockaddr *) &cliaddr, sizeof(cliaddr)); 
+	
 			continue;
 		}
 		cout<<"Here 2\n";
@@ -234,15 +262,25 @@ int main(int argc, char* argv[])
 			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			int fm_no = atoi(fm_no_str);
 			pg_num_here.type = fm_no;
-			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			sendto(sockfd, &pg_num_here, sizeof(pg_num_here), 0, 
+						(const struct sockaddr *) &cliaddr, sizeof(cliaddr)); 
+			
+			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 			continue;
 		}
 		pg_num_here.type = frame_num;
-		msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+		sendto(sockfd, &pg_num_here, sizeof(pg_num_here), 0, 
+					(const struct sockaddr *) &cliaddr, sizeof(cliaddr)); 
+		
+		// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);
 		cout<<"Sending page fault handled\n";
+		servaddr.sin_port = htons(7433);
+		sendto(sockfd, &message, sizeof(message), 0, 
+					(const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+
 		strcpy(message.msg, "PAGE FAULT HANDLED");
 		msgsnd(MQ_2, &message, sizeof(message), 0); 
 	}

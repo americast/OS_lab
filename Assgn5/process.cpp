@@ -57,8 +57,29 @@ int main(int argc, char **argv)
 	process.id = id;
 
 
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	struct sockaddr_in servaddr, cliaddr; 
+
+	memset(&servaddr, 0, sizeof(servaddr)); 
+    memset(&cliaddr, 0, sizeof(cliaddr)); 
+      
+    servaddr.sin_family    = AF_INET; 
+    servaddr.sin_addr.s_addr = INADDR_ANY; 
+    servaddr.sin_port = htons(7763 + id);
+    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  
+            sizeof(servaddr)) < 0 ) 
+    { 
+        perror("bind failed in proc"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+
 	cout<<"PID sent "<<process.pid<<endl;
-	msgsnd(rq_id, &process, sizeof(process), 0);
+
+	servaddr.sin_port = htons(7433); 
+	sendto(sockfd, &process, sizeof(process), 0, 
+				(const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+	// msgsnd(rq_id, &process, sizeof(process), 0);
 	// signal(SIGUSR1, catcher);
 	// sleep(1);
 	kill(getpid(),SIGUSR1);
@@ -73,8 +94,16 @@ int main(int argc, char **argv)
 		cout<<"Page num sent "<<page_num<<endl;
 		pg_num here;
 		here.type = page_num;
-		msgsnd(pg_id, &here, sizeof(here), 0);
-		msgrcv(pg_id, &here, sizeof(here), 1, 0);
+		servaddr.sin_port = htons(6680); 
+		sendto(sockfd, &here, sizeof(here), 0, 
+					(const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+
+		socklen_t len = sizeof(cliaddr);
+		recvfrom(sockfd, &here, sizeof(here), 0, 
+					(struct sockaddr *) &cliaddr, &len); 
+
+		// msgsnd(pg_id, &here, sizeof(here), 0);
+		// msgrcv(pg_id, &here, sizeof(here), 1, 0);
 		frame_num = here.type;
 		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
@@ -94,7 +123,11 @@ int main(int argc, char **argv)
 		}
 	}
 	int reply = -9*m + id;
-	msgsnd(pg_id, &reply, sizeof(reply), 0);
+	servaddr.sin_port = htons(6680); 
+	sendto(sockfd, &reply, sizeof(reply), 0, 
+					(const struct sockaddr *) &servaddr, sizeof(servaddr)); 
+
+	// msgsnd(pg_id, &reply, sizeof(reply), 0);
 	printf("SCHEDULER END\n");
 	exit(EXIT_SUCCESS); 
 

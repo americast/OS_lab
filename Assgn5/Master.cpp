@@ -103,6 +103,7 @@ int main()
 
 	for (int i = 0; i < k * m; i++)
 	{
+		cout<<"i is "<<i<<endl;
 		pge[i].page = i;
 		pge[i].frame = -1;
 		// pge[i].use = 0;

@@ -1,0 +1,56 @@
+
+REPORT :  Assignment 5
+Sayan Sinha (16CS10048)
+_________________________________________________________________________
+
+
+TOPIC : Simulation of Virtual Memory using Demand Paging
+
+The interpretation of structures used in this assignment are given below :
+typedef struct rq 
+{ 
+     short int id;  
+ pid_t pid; 
+} ready_queue;         // for sending messages in MQ1
+
+MQ2 uses integer values to send messages
+
+typedef struct mq 
+{
+ char msg[100];
+} message_queue;        // for sending messages in MQ3
+
+struct page_entry
+{
+    int page;
+    int frame;
+    int validity;
+};                // for entries in page tables 
+
+struct main_mem_frame{
+    int frame;
+    int validity;
+    int use = 0;
+};                // for free frame list
+
+struct map_
+{
+    int page_no;
+    int memory_loc;
+};                // for representation of TLB
+
+
+
+
+
+This assignment includes four modules to implement virtual memory: master, scheduler, MMU and process. The master module initialises the page table and free frame list according to the structures mentioned above. It then generates random values of m_i and p_i and passes them to processes while executing them. Similarly, it passes all required data to other modules using command line arguments. The invalid page references are set in master module itself by setting frame number = -2 in place of invalid page numbers in respective process page tables. It then sleeps until scheduler signals it to kill all modules, including itself.
+
+The scheduler receives processes in ready queue and schedules in FCFS manner. It then waits for message from MMU and takes necessary steps. We use non-blocking msgrcv() for ready queue and break out of the loop after 250000*20 usecs by assuming no more processes are left. It then signals the master to terminate the modules. 
+
+The processes read all arguments from command line and enqueue themselves in ready queue and sleep until scheduler wakes them. They send use MQ2 in order to send page numbers as int and receive frame numbers. Necessary actions are taken according to the frame number. Invalid page access results in -2. Else, it keeps generating numbers using the following scheme : (page_num)*m + id. At the end of page reference string, it sends -9 to the MMU and terminates itself. The MMU handles this command and informs the scheduler about the same.
+
+The MMU uses LRU scheme to maintain the TLB. If a page number is missing in TLB, it looks for it in page table. If it receives -2 as frame number or -9 page number, it notifies the scheduler that the process has terminated. If it receives -1, it handles page fault and notifies the scheduler, else it continues handling requests from the given process. It frees frames allocated to a process after it terminates. A global counter is maintained and requisite output can be found in the “results.txt” file. 
+
+
+
+
