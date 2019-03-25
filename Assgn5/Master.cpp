@@ -101,7 +101,7 @@ int main()
 
 	if( (sched_pid = fork()) == 0)
 	{
-        execlp("./scheduler", "./scheduler", key_3_str, key_4_str, (char *) NULL);
+        execlp("xterm", "xterm", "-hold", "-e","./scheduler", key_3_str, key_4_str, (char *) NULL);
         printf("Failed to start scheduler \n");
         exit(EXIT_FAILURE);
     }

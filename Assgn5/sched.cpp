@@ -16,9 +16,10 @@ mq message_queue;
 
 int main(int argc, char **argv)
 {
-	key_t rq_t = *((key_t*)argv[0]);
-	key_t mq_t = *((key_t*)argv[1]);
+	key_t rq_t = *((key_t*)argv[1]);
+	key_t mq_t = *((key_t*)argv[2]);
 	printf("SCHEDULER INITIATED \n");
+	cout<<"RQ_T "<<rq_t<<endl;
 
 	rq process;
 	mq message;
@@ -33,7 +34,7 @@ int main(int argc, char **argv)
 		while(loop<20)
 		{
 			printf("Loop num :%d\n", loop);
-			if(msgrcv(rq_id, &process, sizeof(process), 1, IPC_NOWAIT)<0)
+			if(msgrcv(rq_id, &process, sizeof(process), 1, 0)<0)
 			{
 				usleep(250000);
 				loop++;

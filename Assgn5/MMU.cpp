@@ -10,8 +10,6 @@
 using namespace std;
 int SM_1, SM_2, MQ_2, MQ_3;
 
-
-
 mq message_queue;
 
 int s;
@@ -33,6 +31,7 @@ void update_ff(int i, int m)
 
 int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2, int key_MQ_2)
 {
+	cout<<"Page fault occured\n";
 	main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 	page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
 	int found = 0;
@@ -52,9 +51,9 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 		}
 		else
 		{
-			if (fm[j].use < min_use)
+			if (fm[j].hist < min_use)
 			{
-				min_use = fm[j].use;
+				min_use = fm[j].hist;
 				min_use_pos = j;
 			}
 		}
@@ -126,9 +125,27 @@ int checkTLB(int page_num, int &frame_num)
 	return 0;
 }
 
+void LRU_update(int f)
+{
+	while(1)
+	{
+		usleep(50000);
+		main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+		for (int i = 0; i < f; i++)
+		{
+			if (fm[f].free)
+				continue;
+			int MSB = fm[f].use << (sizeof(int) - 1);
+			fm[f].hist = fm[f].hist >> 1;
+			fm[f].hist += MSB;
+		}
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	printf("HI I AM MMU\n");
+	cout<<"Here -1\n";
 	// sleep(100);
 	// kill(getpid(), SIGUSR1);
 
@@ -145,20 +162,34 @@ int main(int argc, char* argv[])
 	m = atoi(argv[6]);
 	k = atoi(argv[7]);
 	f = atoi(argv[8]);
+	cout<<"Here -2 is "<<s<<"\n";
+
+	TLB = (map_ *) malloc(sizeof(map_) * s);
 	for (int i = 0; i < s; i++)
 	{
+		cout<<"Here--\n";
 		TLB[i].page_no = -1;
 		TLB[i].memory_loc = -1;
 	}
 
-	map_ TLB[s];
+	// map_ TLB[s];
 
+	cout<<"Here -2.5\n";
 	MQ_2 = msgget(key_MQ_2, 0666 | IPC_CREAT);
 	MQ_3 = msgget(key_MQ_3, 0666 | IPC_CREAT);
 
+	cout<<"Here -2.75\n";
 	SM_1 = shmget(key_SM_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	SM_2 = shmget(key_SM_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
+
+	cout<<"Here -3\n";
+	if (fork() == 0)
+	{
+		LRU_update(f);
+	}
+
+	cout<<"Here -4\n";
 	int page_num;
 	while(1)
 	{
@@ -169,6 +200,7 @@ int main(int argc, char* argv[])
 		int pg_num_act = page_num / m;
 
 
+		cout<<"Here 0\n";
 		if(pg_num_act == -9)
 		{
 			update_ff(id, m);
@@ -178,15 +210,17 @@ int main(int argc, char* argv[])
 		}
 		int frame_num = -1;
 		main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+		cout<<"Here 1\n";
 		if (checkTLB(page_num, frame_num))
 		{
-			fm[frame_num].use++;
+			fm[frame_num].use = 1;
 			char fm_no_str[100];
 			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			int fm_no = atoi(fm_no_str);
 			msgsnd(MQ_3, &fm_no, sizeof(frame_num), 0); 
 			continue;
 		}
+		cout<<"Here 2\n";
 		if (checkPT(page_num, id, m, SM_1, frame_num))
 		{
 			fm[frame_num].use++;
@@ -198,6 +232,7 @@ int main(int argc, char* argv[])
 		}
 		msgsnd(MQ_3, &frame_num, sizeof(frame_num), 0); 
 
+		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);
 		strcpy(message.msg, "PAGE FAULT HANDLED");
 		msgsnd(MQ_2, &message, sizeof(message), 0); 

@@ -8,6 +8,7 @@ struct main_mem_frame{
 	int frame;
 	int free;
 	int use = 0;
+	int hist = 0;
 };
 
 struct mq {

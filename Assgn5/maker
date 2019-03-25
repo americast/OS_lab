@@ -1,4 +1,4 @@
-g++ Master.cpp -o a.out
-g++ MMU.cpp -o mmu
-g++ process.cpp -o process
-g++ sched.cpp -o scheduler
+g++ -g Master.cpp && \
+g++ -g MMU.cpp -o mmu && \
+g++ -g process.cpp -o process && \
+g++ -g sched.cpp -o scheduler

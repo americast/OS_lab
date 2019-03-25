@@ -45,6 +45,7 @@ int main(int argc, char **argv)
 	int id = *((int*)argv[5]);
 
 	printf("PROCESS INITIATED \n");
+	cout<<"RQ_T "<<rq_t<<endl;
 
 	rq process;
 	
@@ -55,8 +56,10 @@ int main(int argc, char **argv)
 	process.id = id;
 
 
+	cout<<"PID sent "<<process.pid<<endl;
 	msgsnd(rq_id, &process, sizeof(process), 0);
 	// signal(SIGUSR1, catcher);
+	sleep(1);
 	kill(getpid(),SIGUSR1);
 	
 	int count = 0;
@@ -65,9 +68,10 @@ int main(int argc, char **argv)
 		printf("INSIDE LOOP\n");
 		int page_num = (rand()%m)*m+id;
 		int frame_num;
+		cout<<"Page num sent "<<page_num<<endl;
 		msgsnd(pg_id, &page_num, sizeof(int), 0);
 		msgrcv(pg_id, &frame_num, sizeof(int), 1, 0);
-
+		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
 		{
 			if(frame_num == -1)
