@@ -37,12 +37,12 @@ int main(int argc, char **argv)
 	signal(SIGUSR1, catcher);
 	signal(SIGUSR2, catcher);
 
-	key_t rq_t = *((key_t*)argv[1]);
-	key_t pg_t = *((key_t*)argv[2]);
-	int page_ref_string_len = *((int*)argv[3]);
-	int total_pages = *((int*)argv[4]);
+	key_t rq_t = atoi(argv[1]);
+	key_t pg_t = atoi(argv[2]);
+	int page_ref_string_len = atoi(argv[3]);
+	int total_pages = atoi(argv[4]);
 	int m = total_pages;
-	int id = *((int*)argv[5]);
+	int id = atoi(argv[5]);
 
 	printf("PROCESS INITIATED \n");
 	cout<<"RQ_T "<<rq_t<<endl;
@@ -52,14 +52,14 @@ int main(int argc, char **argv)
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);
 
-	process.pid = getpid();
+	sprintf(process.pid, "%d", getpid());
 	process.id = id;
 
 
 	cout<<"PID sent "<<process.pid<<endl;
 	msgsnd(rq_id, &process, sizeof(process), 0);
 	// signal(SIGUSR1, catcher);
-	sleep(1);
+	// sleep(1);
 	kill(getpid(),SIGUSR1);
 	
 	int count = 0;
@@ -69,8 +69,11 @@ int main(int argc, char **argv)
 		int page_num = (rand()%m)*m+id;
 		int frame_num;
 		cout<<"Page num sent "<<page_num<<endl;
-		msgsnd(pg_id, &page_num, sizeof(int), 0);
-		msgrcv(pg_id, &frame_num, sizeof(int), 1, 0);
+		pg_num here;
+		here.type = page_num;
+		msgsnd(pg_id, &here, sizeof(pg_num), 0);
+		msgrcv(pg_id, &here, sizeof(pg_num), 1, 0);
+		frame_num = here.type;
 		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
 		{

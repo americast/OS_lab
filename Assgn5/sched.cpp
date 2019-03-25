@@ -16,8 +16,8 @@ mq message_queue;
 
 int main(int argc, char **argv)
 {
-	key_t rq_t = *((key_t*)argv[1]);
-	key_t mq_t = *((key_t*)argv[2]);
+	key_t rq_t = atoi(argv[1]);
+	key_t mq_t = atoi(argv[2]);
 	printf("SCHEDULER INITIATED \n");
 	cout<<"RQ_T "<<rq_t<<endl;
 
@@ -51,7 +51,8 @@ int main(int argc, char **argv)
 			break;
 		}
 		printf("SCHED :: Process executing is : %d - %d \n", process.id, process.pid);
-		kill(process.pid,SIGUSR2); // start process
+		kill(atoi(process.pid),SIGUSR2); // start process
+		cout<<"Waiting for MMU\n";
 		msgrcv(mq_id, &message, sizeof(message), 1, 0);
 		printf("SCHED :: Message is : %s\n", message.msg);
 		if(strcmp(message.msg,"PAGE FAULT HANDLED")==0)

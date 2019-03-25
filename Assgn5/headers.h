@@ -12,6 +12,7 @@ struct main_mem_frame{
 };
 
 struct mq {
+	long type;
 	char msg[100];
 };
 
@@ -22,6 +23,12 @@ struct map_
 };
 
 struct rq { 
-	short int id;
-    pid_t pid; 
+	long id;
+    char pid[100]; 
 }; 
+
+struct pg_num
+{
+	long type;
+	char txt[1];
+};
