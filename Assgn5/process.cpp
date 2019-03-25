@@ -6,12 +6,10 @@
 #include <sys/ipc.h> 
 #include <sys/shm.h> 
 #include <sys/msg.h>
+#include "headers.h"
 using namespace std;
 
-typedef struct rq { 
-	short int id;
-    pid_t pid; 
-} ready_queue; 
+rq ready_queue; 
 
 int global_num = 0;
 
@@ -48,7 +46,7 @@ int main(int argc, char **argv)
 
 	printf("PROCESS INITIATED \n");
 
-	ready_queue process;
+	rq process;
 	
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);

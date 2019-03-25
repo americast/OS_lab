@@ -6,31 +6,14 @@
 #include <sys/ipc.h> 
 #include <sys/shm.h>  
 #include <sys/msg.h> 
+#include "headers.h"
 using namespace std;
 int SM_1, SM_2, MQ_2, MQ_3;
 
 
-struct page_entry{
-	int page;
-	int frame;
-	int validity = -1;
-};
 
-struct main_mem_frame{
-	int frame;
-	int validity;
-	int use = 0;
-};
+mq message_queue;
 
-typedef struct mq {
-	char msg[100];
-} message_queue;
-
-struct map_
-{
-	int page_no;
-	int memory_loc;
-};
 int s;
 map_ *TLB;
 int count = 0;
@@ -43,8 +26,8 @@ void update_ff(int i, int m)
 
 	for (int j = 0; j < m; j++)
 	{
-		if (pg[i * m + j].validity)
-			fm[pg[i * m + j].frame].validity = -1;
+		if (!pg[i * m + j].validity)
+			fm[pg[i * m + j].frame].free = 1;
 	}
 }
 
@@ -58,10 +41,10 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 	int found_pos = 0;
 	for (int j = 0; j < f; j++)
 	{
-		if (fm[j].validity == -1)
+		if (fm[j].free == 1)
 		{
 			fm[j].frame = frame_no;
-			fm[j].validity = 1;
+			fm[j].free = 0;
 			fm[j].use = 0;
 			found = 1;
 			found_pos = j;
@@ -81,7 +64,7 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 	if (!found)
 	{
 		fm[min_use_pos].frame = frame_no;
-		fm[min_use_pos].validity = 1;
+		fm[min_use_pos].free = 0;
 		fm[min_use_pos].use = 0;
 		found = 1;
 		found_pos = min_use_pos;
@@ -147,9 +130,9 @@ int main(int argc, char* argv[])
 {
 	printf("HI I AM MMU\n");
 	// sleep(100);
-	kill(getpid(), SIGUSR1);
+	// kill(getpid(), SIGUSR1);
 
-	message_queue message;
+	mq message;
 
 	int id, m, k, f; // Need to get these, also value of s
 

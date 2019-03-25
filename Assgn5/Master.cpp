@@ -11,6 +11,7 @@
 #include <sys/msg.h>
 #include <unordered_map>
 #include <typeinfo>
+#include "headers.h"
 
 using namespace std;
 
@@ -26,19 +27,6 @@ using namespace std;
 // 	int valid;
 // 	int use;
 // };
-
-struct page_entry{
-	int page;
-	int frame;
-	int use;
-	int valid;
-};
-
-struct main_mem_frame{
-	int frame;
-	int free;
-	int use;
-};
 
 pid_t sched_pid, mmu_pid;
 
@@ -100,8 +88,8 @@ int main()
 	{
 		pge[i].page = i;
 		pge[i].frame = -1;
-		pge[i].use = 0;
-		pge[i].valid = 0;
+		// pge[i].use = 0;
+		pge[i].validity = 0;
 	}	
 
 	for (int i = 0; i < f; i++)
@@ -140,7 +128,7 @@ int main()
     	sprintf(i_str,"%d", i);
     	for(int j =i*m+m_i; j<i*m+m; j++)
     	{
-    		pge[j].valid = 1;
+    		pge[j].validity = 1;
     		pge[j].frame = -2;
     	}
 	    if((process_pid[i] = fork()) == 0)

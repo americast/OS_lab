@@ -7,16 +7,12 @@
 #include <sys/shm.h> 
 #include <semaphore.h>
 #include <sys/msg.h> 
+#include "headers.h"
 using namespace std;
 
-typedef struct rq { 
-	short int id;
-    pid_t pid; 
-} ready_queue; 
+rq ready_queue; 
 
-typedef struct mq {
-	char msg[20];
-} message_queue;
+mq message_queue;
 
 int main(int argc, char **argv)
 {
@@ -24,8 +20,8 @@ int main(int argc, char **argv)
 	key_t mq_t = *((key_t*)argv[1]);
 	printf("SCHEDULER INITIATED \n");
 
-	ready_queue process;
-	message_queue message;
+	rq process;
+	mq message;
 	
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int mq_id = msgget(mq_t, 0666 | IPC_CREAT);
