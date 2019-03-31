@@ -79,6 +79,7 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 	{
 		if (pg[i * m + g].validity == -1)  // eta ektu dekhte hbe
 		{
+			cout<<"Assigned page\n";
 			pg[i * m + g].validity = 1;
 			pg[i * m + g].page = frame_no;
 			pg[i * m + g].frame = found_pos;
@@ -179,9 +180,17 @@ int main(int argc, char* argv[])
 	MQ_3 = msgget(key_MQ_3, 0666 | IPC_CREAT);
 
 	cout<<"Here -2.75\n";
-	SM_1 = shmget(key_SM_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
+	SM_1 = shmget(key_SM_1, (k + 1) * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	SM_2 = shmget(key_SM_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
+	page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
+
+	for (int i = 0; i < k + 1; i++)
+		for (int g = 0; g < m; g++)
+		{
+			cout<<g<<endl;
+			pg[i * m + g].validity = -1;
+		}
 
 	cout<<"Here -3\n";
 	if (fork() == 0)
@@ -208,6 +217,7 @@ int main(int argc, char* argv[])
 
 
 		cout<<"Page num act: "<<pg_num_act<<endl;
+		cout<<"Page ID: "<<id<<endl;
 
 
 		cout<<"Here 0\n";
@@ -245,8 +255,9 @@ int main(int argc, char* argv[])
 			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 			continue;
 		}
-		pg_num_here.type = frame_num;
-		msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+		sprintf(pg_num_here.txt, "%d", frame_num);
+		pg_num_here.type = 4;
+		msgsnd(MQ_3, &pg_num_here, strlen(pg_num_here.txt), 0); 
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);

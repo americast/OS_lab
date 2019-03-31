@@ -63,7 +63,7 @@ int main()
 	key_t key_1 = ftok("SM1",rand() % 100); 
 	if (key_1 < 0)
 		perror("key_1 ftok error");
-	int shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
+	int shmid_1 = shmget(key_1, (k + 1) * m * sizeof(page_entry), 0666|IPC_CREAT); 
     shmctl(shmid_1, IPC_RMID, NULL);
     shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	  

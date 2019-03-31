@@ -53,12 +53,15 @@ int main(int argc, char **argv)
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);
 
-	sprintf(process.pid, "%d", getpid());
-	process.id = id;
+	memcpy(process.pid, &id, sizeof(id));
+	pid_t pid_here = getpid();
+	memcpy(process.pid + sizeof(id), &pid_here, sizeof(pid_here));
+	// sprintf(process.pid, "%d", getpid());
+	process.type = 3;
 	cout<<"ID is: "<<id<<endl;
 
 	cout<<"PID sent "<<process.pid<<endl;
-	if (msgsnd(rq_id, &process, sizeof(process), 0) < 0)
+	if (msgsnd(rq_id, &process, sizeof(id) + sizeof(getpid()), 0) < 0)
 		perror("Msg sending failed");
 	// signal(SIGUSR1, catcher);
 	// sleep(1);
@@ -77,8 +80,8 @@ int main(int argc, char **argv)
 		sprintf(here.txt, "%d", page_num);
 		if (msgsnd(pg_id, &here, strlen(here.txt) + 1, 0) < 0)
 			perror("Page num sending error");
-		msgrcv(pg_id, &here, sizeof(here), 0, 0);
-		frame_num = here.type;
+		msgrcv(pg_id, &here, sizeof(here), 4, 0);
+		frame_num = atoi(here.txt);
 		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
 		{
