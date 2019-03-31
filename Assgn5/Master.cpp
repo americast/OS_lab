@@ -60,15 +60,19 @@ int main()
 	// std::unordered_map<int, int> *TLB_ref;
 	// std::unordered_map<int, int> TLB1;
 
-	key_t key_1 = ftok("SM1",rand()); 
+	key_t key_1 = ftok("SM1",rand() % 100); 
 	if (key_1 < 0)
 		perror("key_1 ftok error");
 	int shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
+    shmctl(shmid_1, IPC_RMID, NULL);
+    shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	  
-	key_t key_2 = ftok("SM2",rand()); 
+	key_t key_2 = ftok("SM2",rand() % 100); 
 	int shmid_2 = shmget(key_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
+    shmctl(shmid_2, IPC_RMID, NULL);
+    shmid_2 = shmget(key_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
-    key_t key_3 = ftok("MQ1", rand());
+    key_t key_3 = ftok("MQ1", rand() % 100);
     int msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
     msgctl(msgid_1, IPC_RMID, NULL); 
     msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
@@ -79,12 +83,12 @@ int main()
     	exit(EXIT_FAILURE);
     }
 
-    key_t key_4 = ftok("MQ2", rand());
+    key_t key_4 = ftok("MQ2", rand() % 100);
     int msgid_2 = msgget(key_4, 0666 | IPC_CREAT);
     msgctl(msgid_2, IPC_RMID, NULL); 
     msgid_2 = msgget(key_4, 0666 | IPC_CREAT);
 
-    key_t key_5 = ftok("MQ3", rand());
+    key_t key_5 = ftok("MQ3", rand() % 100);
     int msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
     msgctl(msgid_3, IPC_RMID, NULL); 
     msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
@@ -137,7 +141,7 @@ int main()
     	exit(EXIT_FAILURE);
     }
 
-    for( int i =0; i<k; i++)
+    for( int i =1; i<=k; i++)
     {
     	int m_i = rand()%m + 1;
     	int p_i = 2*m_i + rand()%(10*m_i+1);
@@ -153,7 +157,7 @@ int main()
 	    if((process_pid[i] = fork()) == 0)
 	    {
 	    	cout<<"key_3_str "<<key_3_str <<endl;
-	    	execlp("./process", "./process", key_3_str, key_5_str, p_i_str, m_str, i_str, (char *) NULL); // send others
+	    	execlp("xterm", "xterm", "-hold", "-e", "./process", key_3_str, key_5_str, p_i_str, m_str, i_str, (char *) NULL); // send others
 	    	printf("Failed to start process \n");
 	    	exit(EXIT_FAILURE);
 	    }

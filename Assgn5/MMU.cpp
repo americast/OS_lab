@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 	while(1)
 	{
 		cout<<"MQ_3 is "<<key_MQ_3<<endl;
-		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 1, 0);
+		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 0, 0);
 
 		page_num = pg_num_here.type;
 
@@ -244,7 +244,8 @@ int main(int argc, char* argv[])
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);
 		cout<<"Sending page fault handled\n";
 		strcpy(message.msg, "PAGE FAULT HANDLED");
-		msgsnd(MQ_2, &message, sizeof(message), 0); 
+		if (msgsnd(MQ_2, &message, sizeof(message), 0) < 0)
+			perror("Page fault handled sending failed");
 	}
 
 }

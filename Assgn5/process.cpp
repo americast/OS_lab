@@ -55,10 +55,11 @@ int main(int argc, char **argv)
 
 	sprintf(process.pid, "%d", getpid());
 	process.id = id;
-
+	cout<<"ID is: "<<id<<endl;
 
 	cout<<"PID sent "<<process.pid<<endl;
-	msgsnd(rq_id, &process, sizeof(process), 0);
+	if (msgsnd(rq_id, &process, sizeof(process), 0) < 0)
+		perror("Msg sending failed");
 	// signal(SIGUSR1, catcher);
 	// sleep(1);
 	kill(getpid(),SIGUSR1);
@@ -73,8 +74,9 @@ int main(int argc, char **argv)
 		cout<<"Page num sent "<<page_num<<endl;
 		pg_num here;
 		here.type = page_num;
-		msgsnd(pg_id, &here, sizeof(here), 0);
-		msgrcv(pg_id, &here, sizeof(here), 1, 0);
+		if (msgsnd(pg_id, &here, sizeof(here), 0) < 0)
+			perror("Page num sending error");
+		msgrcv(pg_id, &here, sizeof(here), 0, 0);
 		frame_num = here.type;
 		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
@@ -94,7 +96,8 @@ int main(int argc, char **argv)
 		}
 	}
 	int reply = -9*m + id;
-	msgsnd(pg_id, &reply, sizeof(reply), 0);
+	if (msgsnd(pg_id, &reply, sizeof(reply), 0) < 0)
+		perror("Sending last page id failed");
 	printf("SCHEDULER END\n");
 	exit(EXIT_SUCCESS); 
 
