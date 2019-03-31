@@ -73,8 +73,9 @@ int main(int argc, char **argv)
 		int frame_num;
 		cout<<"Page num sent "<<page_num<<endl;
 		pg_num here;
-		here.type = page_num;
-		if (msgsnd(pg_id, &here, sizeof(here), 0) < 0)
+		here.type = 1;
+		sprintf(here.txt, "%d", page_num);
+		if (msgsnd(pg_id, &here, strlen(here.txt) + 1, 0) < 0)
 			perror("Page num sending error");
 		msgrcv(pg_id, &here, sizeof(here), 0, 0);
 		frame_num = here.type;
@@ -96,9 +97,12 @@ int main(int argc, char **argv)
 		}
 	}
 	int reply = -9*m + id;
-	if (msgsnd(pg_id, &reply, sizeof(reply), 0) < 0)
+	pg_num here;
+	here.type = 1;
+	sprintf(here.txt, "%d", reply);
+	if (msgsnd(pg_id, &here, strlen(here.txt), 0) < 0)
 		perror("Sending last page id failed");
-	printf("SCHEDULER END\n");
+	printf("PROCESS END\n");
 	exit(EXIT_SUCCESS); 
 
 }

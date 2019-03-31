@@ -100,9 +100,9 @@ int checkPT(int page_no, int i, int m, int SM_1, int &new_frame_no)
 	int found = 0;
 	for (int j = 0; j < m; j++)
 	{
-		if (pg[i*j*sizeof(page_entry)].page == page_no)
+		if (pg[i*m + j].page == page_no && pg[i*m + j].validity)
 		{
-			new_frame_no = pg[i*j*sizeof(page_entry)].frame;
+			new_frame_no = pg[i*m + j].frame;
 			found = 1;
 			TLB[page_no % s].memory_loc = new_frame_no;
 			TLB[page_no % s].page_no = page_no;
@@ -195,13 +195,19 @@ int main(int argc, char* argv[])
 	while(1)
 	{
 		cout<<"MQ_3 is "<<key_MQ_3<<endl;
-		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 0, 0);
+		msgrcv(MQ_3, &pg_num_here, sizeof(pg_num_here), 1, 0);
 
-		page_num = pg_num_here.type;
+		page_num = atoi(pg_num_here.txt);
 
 		int id = page_num % m;
 
 		int pg_num_act = page_num / m;
+
+		if (pg_num_act < 0)
+			pg_num_act--;
+
+
+		cout<<"Page num act: "<<pg_num_act<<endl;
 
 
 		cout<<"Here 0\n";
@@ -210,7 +216,9 @@ int main(int argc, char* argv[])
 			update_ff(id, m);
 			strcpy(message.msg, "TERMINATED");
 			cout<<"TERMINATE sent\n";
-			msgsnd(MQ_2, &message, sizeof(message), 0);
+			message.type = 2;
+			if (msgsnd(MQ_2, &message, sizeof(message), 0) < 0)
+				perror("Terminate sending failed");
 			continue;
 		}
 		int frame_num = -1;
@@ -244,6 +252,7 @@ int main(int argc, char* argv[])
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);
 		cout<<"Sending page fault handled\n";
 		strcpy(message.msg, "PAGE FAULT HANDLED");
+		message.type = 2;
 		if (msgsnd(MQ_2, &message, sizeof(message), 0) < 0)
 			perror("Page fault handled sending failed");
 	}
