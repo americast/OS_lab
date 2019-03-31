@@ -42,6 +42,7 @@ void catcher(int signum)
 
 int main()
 {
+	srand(time(NULL));
 	signal(SIGUSR1, catcher);
 	int k, m, f, s;
 
@@ -59,15 +60,15 @@ int main()
 	// std::unordered_map<int, int> *TLB_ref;
 	// std::unordered_map<int, int> TLB1;
 
-	key_t key_1 = ftok("SM1",1); 
+	key_t key_1 = ftok("SM1",rand()); 
 	if (key_1 < 0)
 		perror("key_1 ftok error");
 	int shmid_1 = shmget(key_1, k * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	  
-	key_t key_2 = ftok("SM2",2); 
+	key_t key_2 = ftok("SM2",rand()); 
 	int shmid_2 = shmget(key_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
-    key_t key_3 = ftok("MQ1", 3);
+    key_t key_3 = ftok("MQ1", rand());
     int msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
     msgctl(msgid_1, IPC_RMID, NULL); 
     msgid_1 = msgget(key_3, 0666 | IPC_CREAT);
@@ -78,12 +79,12 @@ int main()
     	exit(EXIT_FAILURE);
     }
 
-    key_t key_4 = ftok("MQ2", 4);
+    key_t key_4 = ftok("MQ2", rand());
     int msgid_2 = msgget(key_4, 0666 | IPC_CREAT);
     msgctl(msgid_2, IPC_RMID, NULL); 
     msgid_2 = msgget(key_4, 0666 | IPC_CREAT);
 
-    key_t key_5 = ftok("MQ3", 5);
+    key_t key_5 = ftok("MQ3", rand());
     int msgid_3 = msgget(key_5, 0666 | IPC_CREAT);
     msgctl(msgid_3, IPC_RMID, NULL); 
     msgid_3 = msgget(key_5, 0666 | IPC_CREAT);

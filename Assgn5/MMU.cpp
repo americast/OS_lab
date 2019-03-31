@@ -154,10 +154,10 @@ int main(int argc, char* argv[])
 	int id, m, k, f; // Need to get these, also value of s
 
 
-	int key_MQ_2 = ftok("MQ2", 4);
-	int key_MQ_3 = ftok("MQ3", 5);
-	int key_SM_1 = ftok("SM1", 1);
-	int key_SM_2 = ftok("SM2", 2);
+	int key_MQ_2 = atoi(argv[1]);
+	int key_MQ_3 = atoi(argv[2]);
+	int key_SM_1 = atoi(argv[3]);
+	int key_SM_2 = atoi(argv[4]);
 	s = atoi(argv[5]);
 	m = atoi(argv[6]);
 	k = atoi(argv[7]);
