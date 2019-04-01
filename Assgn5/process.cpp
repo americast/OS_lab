@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);
 
 	// sprintf(process.pid, "%d", getpid());
-	process.type = 2;
+	process.type = 100 + id;
 	cout<<"ID is: "<<id<<endl;
 	memcpy(process.pid, &id, sizeof(int));
 	pid_t pid_here = getpid();

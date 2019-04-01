@@ -1,3 +1,9 @@
+for i in $(ipcs -a | grep "^s" | awk '{ print $2 }');
+do
+        echo "ipcrm -s $i" 
+        ipcrm -s $i 
+done 
+
 g++ -g Master.cpp && \
 g++ -g MMU.cpp -o mmu && \
 g++ -g process.cpp -o process && \
