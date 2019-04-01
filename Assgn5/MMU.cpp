@@ -87,6 +87,9 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 		}
 	}
 
+	for (int g = 0; g < m; g++)
+		cout<<"validity where: "<<pg[i * m + g].validity<<endl;
+
 	
 	// int pid;	// Need to know how to get this
 	// msgsnd(key_MQ_2, &pid, sizeof(int), 0); 
