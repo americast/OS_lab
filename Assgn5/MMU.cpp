@@ -77,6 +77,7 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 
 	for (int g = 0; g < m; g++)
 	{
+		cout<<"validity here: "<<pg[i * m + g].validity<<endl;
 		if (pg[i * m + g].validity == -1)  // eta ektu dekhte hbe
 		{
 			pg[i * m + g].validity = 1;

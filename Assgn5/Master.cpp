@@ -106,12 +106,12 @@ int main()
 	sprintf(key_4_str,"%d", key_4);
 	sprintf(key_5_str,"%d", key_5);
 
-	for (int i = 0; i < k * m; i++)
+	for (int i = 0; i < (k + 1) * m; i++)
 	{
 		pge[i].page = i;
 		pge[i].frame = -1;
 		// pge[i].use = 0;
-		pge[i].validity = 0;
+		pge[i].validity = -1;
 	}	
 
 	for (int i = 0; i < f; i++)
