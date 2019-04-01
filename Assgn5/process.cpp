@@ -53,12 +53,14 @@ int main(int argc, char **argv)
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);
 
-	sprintf(process.pid, "%d", getpid());
-	process.id = id;
+	// sprintf(process.pid, "%d", getpid());
+	process.type = 2;
 	cout<<"ID is: "<<id<<endl;
-
+	memcpy(process.pid, &id, sizeof(int));
+	pid_t pid_here = getpid();
+	memcpy(process.pid + sizeof(int), &pid_here, sizeof(pid_t));
 	cout<<"PID sent "<<process.pid<<endl;
-	if (msgsnd(rq_id, &process, sizeof(process), 0) < 0)
+	if (msgsnd(rq_id, &process, sizeof(int) + sizeof(pid_t), 0) < 0)
 		perror("Msg sending failed");
 	// signal(SIGUSR1, catcher);
 	// sleep(1);
@@ -78,7 +80,7 @@ int main(int argc, char **argv)
 		if (msgsnd(pg_id, &here, strlen(here.txt) + 1, 0) < 0)
 			perror("Page num sending error");
 		msgrcv(pg_id, &here, sizeof(here), 4, 0);
-		frame_num = here.type;
+		frame_num = atoi(here.txt);
 		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
 		{
@@ -88,6 +90,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
+				cout<<"Invalid memory access, terminating\n";
 				exit(EXIT_FAILURE);
 			}
 		}

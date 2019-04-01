@@ -77,7 +77,7 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 
 	for (int g = 0; g < m; g++)
 	{
-		cout<<"validity here: "<<pg[i * m + g].validity<<endl;
+		// cout<<"validity here: "<<pg[i * m + g].validity<<endl;
 		if (pg[i * m + g].validity == -1)  // eta ektu dekhte hbe
 		{
 			pg[i * m + g].validity = 1;
@@ -87,8 +87,8 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 		}
 	}
 
-	for (int g = 0; g < m; g++)
-		cout<<"validity where: "<<pg[i * m + g].validity<<endl;
+	// for (int g = 0; g < m; g++)
+	// 	cout<<"validity where: "<<pg[i * m + g].validity<<endl;
 
 	
 	// int pid;	// Need to know how to get this
@@ -231,17 +231,19 @@ int main(int argc, char* argv[])
 		if (checkTLB(page_num, frame_num))
 		{
 			fm[frame_num].use = 1;
+			cout<<"Found in TLB\n";
 			// char fm_no_str[100];
 			// sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			// int fm_no = atoi(fm_no_str);
 			// pg_num_here.type = fm_no;
 			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 			// continue;
+			cout<<"Here 2\n";
 		}
-		cout<<"Here 2\n";
-		if (checkPT(page_num, id, m, SM_1, frame_num))
+		else if (checkPT(page_num, id, m, SM_1, frame_num))
 		{
 			fm[frame_num].use++;
+			cout<<"Found in PT\n";
 			// char fm_no_str[100];
 			// sprintf(fm_no_str, "%p", &fm[frame_num].frame);
 			// int fm_no = atoi(fm_no_str);
@@ -250,12 +252,24 @@ int main(int argc, char* argv[])
 			// continue;
 		}
 		// pg_num_here.type = frame_num;
+		cout<<"Frame num: "<<frame_num<<endl;
 		sprintf(pg_num_here.txt, "%d", frame_num);
 		pg_num_here.type = 4;
 		msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
 
 		if (frame_num >= 0)
 			continue;
+
+		if(frame_num == -9)
+		{
+			update_ff(id, m);
+			strcpy(message.msg, "TERMINATED");
+			cout<<"TERMINATE sent\n";
+			message.type = 2;
+			if (msgsnd(MQ_2, &message, sizeof(message), 0) < 0)
+				perror("Terminate sending failed");
+			continue;
+		}
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);

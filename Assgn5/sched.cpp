@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 		while(loop<20)
 		{
 			printf("Loop num :%d\n", loop);
-			if(msgrcv(rq_id, &process, sizeof(process), 0, 0)<0)
+			if(msgrcv(rq_id, &process, sizeof(process), 2, 0)<0)
 			{
 				usleep(250000);
 				loop++;
@@ -50,13 +50,17 @@ int main(int argc, char **argv)
 			kill(getppid(),SIGUSR1);
 			break;
 		}
-		printf("SCHED :: Process executing is : %d - %d \n", process.id, atoi(process.pid));
-		kill(atoi(process.pid),SIGUSR2); // start process
+		int id; pid_t pid;
+		memcpy(&id, process.pid, sizeof(int));
+		memcpy(&pid, process.pid + sizeof(int), sizeof(pid_t));
+		printf("SCHED :: Process executing is : %d - %d \n", id, pid);
+		kill(pid,SIGUSR2); // start process
 		cout<<"Waiting for MMU\n";
 		msgrcv(mq_id, &message, sizeof(message), 2, 0);
 		printf("SCHED :: Message is : %s\n", message.msg);
 		if(strcmp(message.msg,"PAGE FAULT HANDLED")==0)
 		{
+			process.type = 2;
 			msgsnd(rq_id, &process, sizeof(process), 0);
 		}
 

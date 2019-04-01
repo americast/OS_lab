@@ -23,7 +23,7 @@ struct map_
 };
 
 struct rq { 
-	long id;
+	long type;
     char pid[100]; 
 }; 
 
