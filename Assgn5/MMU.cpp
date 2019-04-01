@@ -87,8 +87,8 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 	}
 
 	
-	int pid;	// Need to know how to get this
-	msgsnd(key_MQ_2, &pid, sizeof(int), 0); 
+	// int pid;	// Need to know how to get this
+	// msgsnd(key_MQ_2, &pid, sizeof(int), 0); 
 	return found;
 }
 
@@ -227,26 +227,31 @@ int main(int argc, char* argv[])
 		if (checkTLB(page_num, frame_num))
 		{
 			fm[frame_num].use = 1;
-			char fm_no_str[100];
-			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
-			int fm_no = atoi(fm_no_str);
-			pg_num_here.type = fm_no;
-			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
-			continue;
+			// char fm_no_str[100];
+			// sprintf(fm_no_str, "%p", &fm[frame_num].frame);
+			// int fm_no = atoi(fm_no_str);
+			// pg_num_here.type = fm_no;
+			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			// continue;
 		}
 		cout<<"Here 2\n";
 		if (checkPT(page_num, id, m, SM_1, frame_num))
 		{
 			fm[frame_num].use++;
-			char fm_no_str[100];
-			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
-			int fm_no = atoi(fm_no_str);
-			pg_num_here.type = fm_no;
-			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
-			continue;
+			// char fm_no_str[100];
+			// sprintf(fm_no_str, "%p", &fm[frame_num].frame);
+			// int fm_no = atoi(fm_no_str);
+			// pg_num_here.type = fm_no;
+			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			// continue;
 		}
-		pg_num_here.type = frame_num;
+		// pg_num_here.type = frame_num;
+		sprintf(pg_num_here.txt, "%d", frame_num);
+		pg_num_here.type = 4;
 		msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+
+		if (frame_num >= 0)
+			continue;
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);

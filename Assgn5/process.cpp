@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 		sprintf(here.txt, "%d", page_num);
 		if (msgsnd(pg_id, &here, strlen(here.txt) + 1, 0) < 0)
 			perror("Page num sending error");
-		msgrcv(pg_id, &here, sizeof(here), 0, 0);
+		msgrcv(pg_id, &here, sizeof(here), 4, 0);
 		frame_num = here.type;
 		cout<<"Frame num received "<<frame_num<<endl;
 		if(frame_num<0)
