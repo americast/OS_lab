@@ -27,6 +27,8 @@ void update_ff(int i, int m)
 		if (!pg[i * m + j].validity)
 			fm[pg[i * m + j].frame].free = 1;
 	}
+	shmdt(fm);
+	shmdt(pg);
 }
 
 int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2, int key_MQ_2)
@@ -88,8 +90,11 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 	}
 
 	
-	int pid;	// Need to know how to get this
-	msgsnd(key_MQ_2, &pid, sizeof(int), 0); 
+	// int pid;	// Need to know how to get this
+	// msgsnd(key_MQ_2, &pid, sizeof(int), 0); 
+	
+	shmdt(fm);
+	shmdt(pg);
 	return found;
 }
 
@@ -110,6 +115,7 @@ int checkPT(int page_no, int i, int m, int SM_1, int &new_frame_no)
 			break;
 		}
 	}
+	shmdt(pg);
 
 	return found;
 }
@@ -183,14 +189,14 @@ int main(int argc, char* argv[])
 	SM_1 = shmget(key_SM_1, (k + 1) * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	SM_2 = shmget(key_SM_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
-	page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
+	// page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
 
-	for (int i = 0; i < k + 1; i++)
-		for (int g = 0; g < m; g++)
-		{
-			cout<<g<<endl;
-			pg[i * m + g].validity = -1;
-		}
+	// for (int i = 0; i < k + 1; i++)
+	// 	for (int g = 0; g < m; g++)
+	// 	{
+	// 		cout<<g<<endl;
+	// 		pg[i * m + g].validity = -1;
+	// 	}
 
 	cout<<"Here -3\n";
 	if (fork() == 0)
@@ -232,32 +238,28 @@ int main(int argc, char* argv[])
 			continue;
 		}
 		int frame_num = -1;
-		main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 		cout<<"Here 1\n";
 		if (checkTLB(page_num, frame_num))
 		{
+			main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 			fm[frame_num].use = 1;
-			char fm_no_str[100];
-			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
-			int fm_no = atoi(fm_no_str);
-			pg_num_here.type = fm_no;
-			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
-			continue;
+			shmdt(fm);
 		}
 		cout<<"Here 2\n";
 		if (checkPT(page_num, id, m, SM_1, frame_num))
 		{
+			main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 			fm[frame_num].use++;
-			char fm_no_str[100];
-			sprintf(fm_no_str, "%p", &fm[frame_num].frame);
-			int fm_no = atoi(fm_no_str);
-			pg_num_here.type = fm_no;
-			msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
-			continue;
+			shmdt(fm);
 		}
 		sprintf(pg_num_here.txt, "%d", frame_num);
 		pg_num_here.type = 4;
-		msgsnd(MQ_3, &pg_num_here, strlen(pg_num_here.txt), 0); 
+		if (msgsnd(MQ_3, &pg_num_here, strlen(pg_num_here.txt), 0) < 0)
+			perror("Error in sending frame num");
+
+
+		if (frame_num >= 0)
+			continue;
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);

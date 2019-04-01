@@ -106,7 +106,7 @@ int main()
 	sprintf(key_4_str,"%d", key_4);
 	sprintf(key_5_str,"%d", key_5);
 
-	for (int i = 0; i < k * m; i++)
+	for (int i = 0; i < (k + 1) * m; i++)
 	{
 		pge[i].page = i;
 		pge[i].frame = -1;
@@ -120,6 +120,16 @@ int main()
 		mmf[i].free = 1;
 		mmf[i].use = 0;
 	}
+
+    // for (int i = 1; i <=k; i++)
+    //     for(int j =i*m+m_i; j<i*m+m; j++)
+    //     {
+    //         pge[j].validity = 1;
+    //         pge[j].frame = -2;
+    //     }
+
+    shmdt(pge);
+    shmdt(mmf);
 
 	if( (sched_pid = fork()) == 0)
 	{
@@ -149,11 +159,6 @@ int main()
     	sprintf(m_str,"%d", m);
     	sprintf(p_i_str,"%d", p_i);
     	sprintf(i_str,"%d", i);
-    	for(int j =i*m+m_i; j<i*m+m; j++)
-    	{
-    		pge[j].validity = 1;
-    		pge[j].frame = -2;
-    	}
 	    if((process_pid[i] = fork()) == 0)
 	    {
 	    	cout<<"key_3_str "<<key_3_str <<endl;
