@@ -16,15 +16,16 @@ int s;
 map_ *TLB;
 int count = 0;
 
+main_mem_frame *fm;
 void update_ff(int i, int m)
 {
 
-	main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+	// main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 	page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0);
 
 	for (int j = 0; j < m; j++)
 	{
-		if (!pg[i * m + j].validity)
+		if (pg[i * m + j].validity == 1)
 			fm[pg[i * m + j].frame].free = 1;
 	}
 	shmdt(fm);
@@ -34,7 +35,7 @@ void update_ff(int i, int m)
 int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2, int key_MQ_2)
 {
 	cout<<"Page fault occured\n";
-	main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+	// main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 	page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
 	int found = 0;
 	int min_use = INT_MAX;
@@ -79,6 +80,7 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 
 	for (int g = 0; g < m; g++)
 	{
+		// cout<<"validity here: "<<pg[i * m + g].validity<<endl;
 		if (pg[i * m + g].validity == -1)  // eta ektu dekhte hbe
 		{
 			cout<<"Assigned page\n";
@@ -89,12 +91,18 @@ int handlePageFault(int frame_no, int i, int m, int s, int f, int SM_1, int SM_2
 		}
 	}
 
+	// for (int g = 0; g < m; g++)
+	// 	cout<<"validity where: "<<pg[i * m + g].validity<<endl;
+
 	
 	// int pid;	// Need to know how to get this
 	// msgsnd(key_MQ_2, &pid, sizeof(int), 0); 
+<<<<<<< HEAD
 	
 	shmdt(fm);
 	shmdt(pg);
+=======
+>>>>>>> just_Working
 	return found;
 }
 
@@ -137,7 +145,7 @@ void LRU_update(int f)
 	while(1)
 	{
 		usleep(50000);
-		main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+		// main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 		for (int i = 0; i < f; i++)
 		{
 			if (fm[f].free)
@@ -189,6 +197,7 @@ int main(int argc, char* argv[])
 	SM_1 = shmget(key_SM_1, (k + 1) * m * sizeof(page_entry), 0666|IPC_CREAT); 
 	SM_2 = shmget(key_SM_2, f * sizeof(main_mem_frame), 0666|IPC_CREAT); 
 
+<<<<<<< HEAD
 	// page_entry *pg = (page_entry*) shmat(SM_1,(void*)0,0); 
 
 	// for (int i = 0; i < k + 1; i++)
@@ -197,6 +206,9 @@ int main(int argc, char* argv[])
 	// 		cout<<g<<endl;
 	// 		pg[i * m + g].validity = -1;
 	// 	}
+=======
+	fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
+>>>>>>> just_Working
 
 	cout<<"Here -3\n";
 	if (fork() == 0)
@@ -229,25 +241,39 @@ int main(int argc, char* argv[])
 		cout<<"Here 0\n";
 		if(pg_num_act == -9)
 		{
-			update_ff(id, m);
 			strcpy(message.msg, "TERMINATED");
 			cout<<"TERMINATE sent\n";
 			message.type = 2;
 			if (msgsnd(MQ_2, &message, sizeof(message), 0) < 0)
 				perror("Terminate sending failed");
+			cout<<"Updating ff\n";
+			update_ff(id, m);
+			cout<<"Updated ff\n";
 			continue;
 		}
 		int frame_num = -1;
 		cout<<"Here 1\n";
 		if (checkTLB(page_num, frame_num))
 		{
+<<<<<<< HEAD
 			main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 			fm[frame_num].use = 1;
 			shmdt(fm);
+=======
+			cout<<"Found in TLB\n";
+			fm[frame_num].use = 1;
+			// char fm_no_str[100];
+			// sprintf(fm_no_str, "%p", &fm[frame_num].frame);
+			// int fm_no = atoi(fm_no_str);
+			// pg_num_here.type = fm_no;
+			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			// continue;
+			cout<<"Here 2\n";
+>>>>>>> just_Working
 		}
-		cout<<"Here 2\n";
-		if (checkPT(page_num, id, m, SM_1, frame_num))
+		else if (checkPT(page_num, id, m, SM_1, frame_num))
 		{
+<<<<<<< HEAD
 			main_mem_frame *fm = (main_mem_frame*) shmat(SM_2,(void*)0,0);
 			fm[frame_num].use++;
 			shmdt(fm);
@@ -260,6 +286,39 @@ int main(int argc, char* argv[])
 
 		if (frame_num >= 0)
 			continue;
+=======
+			cout<<"Found in PT\n";
+			fm[frame_num].use++;
+			cout<<"Here3\n";
+			// char fm_no_str[100];
+			// sprintf(fm_no_str, "%p", &fm[frame_num].frame);
+			// int fm_no = atoi(fm_no_str);
+			// pg_num_here.type = fm_no;
+			// msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+			// continue;
+		}
+		// pg_num_here.type = frame_num;
+		cout<<"Frame num: "<<frame_num<<endl;
+		sprintf(pg_num_here.txt, "%d", frame_num);
+		pg_num_here.type = 4;
+		msgsnd(MQ_3, &pg_num_here, sizeof(pg_num), 0); 
+>>>>>>> just_Working
+
+		if (frame_num >= 0)
+			continue;
+
+		if(frame_num == -9)
+		{
+			cout<<"Updating ff\n";
+			update_ff(id, m);
+			cout<<"Updated ff\n";
+			strcpy(message.msg, "TERMINATED");
+			cout<<"TERMINATE sent\n";
+			message.type = 2;
+			if (msgsnd(MQ_2, &message, sizeof(message), 0) < 0)
+				perror("Terminate sending failed");
+			continue;
+		}
 
 		cout<<"Here 3\n";
 		handlePageFault(page_num, id, m, s, f, SM_1, SM_2, key_MQ_2);

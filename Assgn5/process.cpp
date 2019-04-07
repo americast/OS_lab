@@ -53,15 +53,14 @@ int main(int argc, char **argv)
 	int rq_id = msgget(rq_t, 0666 | IPC_CREAT); 
 	int pg_id = msgget(pg_t, 0666 | IPC_CREAT);
 
-	memcpy(process.pid, &id, sizeof(id));
-	pid_t pid_here = getpid();
-	memcpy(process.pid + sizeof(id), &pid_here, sizeof(pid_here));
 	// sprintf(process.pid, "%d", getpid());
-	process.type = 3;
+	process.type = 100 + id;
 	cout<<"ID is: "<<id<<endl;
-
+	memcpy(process.pid, &id, sizeof(int));
+	pid_t pid_here = getpid();
+	memcpy(process.pid + sizeof(int), &pid_here, sizeof(pid_t));
 	cout<<"PID sent "<<process.pid<<endl;
-	if (msgsnd(rq_id, &process, sizeof(id) + sizeof(getpid()), 0) < 0)
+	if (msgsnd(rq_id, &process, sizeof(int) + sizeof(pid_t), 0) < 0)
 		perror("Msg sending failed");
 	// signal(SIGUSR1, catcher);
 	// sleep(1);
@@ -91,6 +90,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
+				cout<<"Invalid memory access, terminating\n";
 				exit(EXIT_FAILURE);
 			}
 		}
