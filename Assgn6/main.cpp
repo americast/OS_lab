@@ -26,14 +26,14 @@ struct super_block
 	int sys_size, num_blocks, block_size, num_files;
 	FAT* fat;
 	DIR* dir;
-	int* free;
+	int* used;
 };
 
 
 
 void* *blocks;
 
-block* my_open(char *file_name)
+my_file* my_open(char *file_name)
 {
 	int num_files = ((super_block *) blocks[0])->num_files;
 	int i;
@@ -46,7 +46,7 @@ block* my_open(char *file_name)
 	// cout<<"num_blocks: "<<num_blocks<<endl;
 	for (int i = 0; i < num_blocks - 1; i++)
 	{
-		if (((super_block *) blocks[0])->free[i] == 0)
+		if (((super_block *) blocks[0])->used[i] == 0)
 		{
 			found = 1;
 			pos = i;
@@ -56,7 +56,7 @@ block* my_open(char *file_name)
 	if (found)
 	{
 		int i = pos;
-		((super_block *) blocks[0])->free[i] = 1;
+		((super_block *) blocks[0])->used[i] = 1;
 		strcpy(((super_block *) blocks[0])->fat[i].filename, file_name);
 		block *here = (block *) malloc(sizeof(block));
 		here->next_ptr = NULL;
@@ -75,25 +75,60 @@ block* my_open(char *file_name)
 	}
 }
 
-int my_write(block *file, char *text, int length)
+int my_erase(my_file *file)
 {
+	if (((super_block *) blocks[0])->used[file->i] == 0)
+		return -1;
+	my_file* file_org = file;
+	while(1)
+	{
+		file->len = 0;
+		if (file->next_ptr == NULL)
+			break;
+		file = file->next_ptr;
+		int i = file->i;
+		((super_block *) blocks[0])->used[i] = 0;
+	}
+	file_org->next_ptr = NULL;
+	return 1;
+}
+
+int my_write(block *file, char *text, int length, char mode)
+{
+	if (mode == 'w')
+	{
+		cout<<"Erasing"<<endl;
+		my_erase(file);
+	}
+	else
+	{
+		while(1)
+			if (file->next_ptr == NULL)
+				break;
+			else
+				file = file->next_ptr;
+
+	}
 	int block_size = ((super_block *) blocks[0])->block_size;
 	int count = 0;
 	do
 	{
 		int len_here, end_flag = 0;
-		if (length > block_size - sizeof(void *) - 2 * sizeof(int))
-			len_here = block_size - sizeof(void *) - 2 * sizeof(int);
+		if (length > block_size - sizeof(void *) - 2 * sizeof(int) - file->len)
+			len_here = block_size - sizeof(void *) - 2 * sizeof(int) - file->len;
 		else
 		{
 			len_here = length;
 			end_flag = 1;
 		}
-		file->buf = (char *) malloc(sizeof(char) * len_here);
-		memcpy(file->buf, text + count, len_here);
+		if (file->len == 0)
+			file->buf = (char *) malloc(sizeof(char) * len_here);
+		else
+			file->buf = (char *) realloc(file->buf, sizeof(char) * (file->len + len_here));
+		memcpy(file->buf + file->len, text + count, len_here);
 		count+=len_here;
 		length-=len_here;
-		file->len = len_here;
+		file->len = file->len + len_here;
 		if (end_flag)
 		{
 			file->next_ptr = NULL;
@@ -104,7 +139,7 @@ int my_write(block *file, char *text, int length)
 			int i, found_flag = 0;
 			for (i = 0; i < ((super_block *)blocks[0])->num_blocks - 1; i++)
 			{
-				if (((super_block *)blocks[0])->free[i] == 0)
+				if (((super_block *)blocks[0])->used[i] == 0)
 				{
 					found_flag = 1;
 					break;
@@ -117,6 +152,7 @@ int my_write(block *file, char *text, int length)
 				file->next_ptr = here;
 				file = here;
 				file->i = i;
+				file->len = 0;
 			}
 			else
 			{
@@ -127,6 +163,7 @@ int my_write(block *file, char *text, int length)
 	}while (length > 0);
 	return length;
 }
+
 
 int my_cat(char *str)
 {
@@ -194,7 +231,7 @@ void my_read(char *text, my_file *file, int len)
 	}
 }
 
-block* my_copy(char *system_file, char *file_here)
+my_file* my_copy(char *system_file, char *file_here)
 {
 	my_file *file = my_open(file_here);
 	FILE *s_file;
@@ -208,7 +245,7 @@ block* my_copy(char *system_file, char *file_here)
 	txt_here[size - 1] = '\0';
 	// cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
 	fclose(s_file);
-	int n = my_write(file, txt_here, size);
+	int n = my_write(file, txt_here, size, 'w');
 	if (n >= 0)
 		return file;
 	else
@@ -232,17 +269,23 @@ int main()
 	blocks[0] = sb;
 
 	sb->fat = (FAT *) malloc(sizeof(FAT) * (num_blocks - 1));
-	sb->free = (int *) malloc(sizeof(int) * (num_blocks- 1));
+	sb->used = (int *) malloc(sizeof(int) * (num_blocks- 1));
 	sb->sys_size = sys_size;
 	sb->block_size = block_size;
 	sb->num_blocks = num_blocks;
 	sb->num_files = 0;
 
 	for (int i = 0; i < num_blocks; i++)
-		sb->free[i] = 0;
+		sb->used[i] = 0;
+
+	// API testing
 
 	my_file *file = my_open("hello");
-	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61);
+	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61, 'w');
+	my_cat("hello");
+	my_write(file, "hello", 5, 'w');
+	my_cat("hello");
+	my_write(file, " ja gelo", 8, 'a');
 	my_cat("hello");
 	my_file *file2 = my_copy("test", "test2");
 	my_file *file3 = my_open("test2");
