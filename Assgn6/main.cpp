@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include <math.h>
 using namespace std;
 
 struct FAT
@@ -31,6 +32,7 @@ block* my_open(char *file_name)
 {
 	int num_blocks = ((super_block *) blocks[0])->num_blocks;
 	int found = 0, pos;
+	cout<<"num_blocks: "<<num_blocks<<endl;
 	for (int i = 0; i < num_blocks - 1; i++)
 	{
 		if (((super_block *) blocks[0])->free[i] == 0)
@@ -73,7 +75,7 @@ int my_write(block *file, char *text, int length)
 			end_flag = 1;
 		}
 		file->buf = (char *) malloc(sizeof(char) * len_here);
-		memcpy(text + count, file->buf, len_here);
+		memcpy(file->buf, text + count, len_here);
 		count+=len_here;
 		length-=len_here;
 		if (end_flag)
@@ -116,7 +118,8 @@ int main()
 	cin>>sys_size;
 	cout<<"\nEnter size of one block in KB: ";
 	cin>>block_size;
-	int num_blocks = (sys_size - (sizeof(super_block) - sizeof(int*) - sizeof(FAT*)) )* pow(2, 20) / (block_size * pow(2, 10) + (sizeof(FAT) + sizeof(int)));
+	int num_blocks = (sys_size * pow(2, 20) - (sizeof(super_block) - sizeof(int*) - sizeof(FAT*)) ) / (block_size * pow(2, 10) + (sizeof(FAT) + sizeof(int)));
+	cout<<"Num blocks in main: "<<num_blocks<<endl;
 	blocks = (void **) malloc(sizeof(void *) * sizeof(num_blocks));
 
 	super_block *sb = (super_block *) malloc(sizeof(super_block));
