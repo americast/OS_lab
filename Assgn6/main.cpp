@@ -35,6 +35,12 @@ void* *blocks;
 
 block* my_open(char *file_name)
 {
+	int num_files = ((super_block *) blocks[0])->num_files;
+	int i;
+	for (i = 0; i < num_files; i++)
+		if (strcmp(((super_block *) blocks[0])->fat[i].filename, file_name) == 0)
+			return ((super_block *) blocks[0])->fat[i].ptr;
+
 	int num_blocks = ((super_block *) blocks[0])->num_blocks;
 	int found = 0, pos;
 	// cout<<"num_blocks: "<<num_blocks<<endl;
@@ -239,8 +245,9 @@ int main()
 	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61);
 	my_cat("hello");
 	my_file *file2 = my_copy("test", "test2");
+	my_file *file3 = my_open("test2");
 	char txt_here[100];
-	my_read(txt_here, file2, 10);
+	my_read(txt_here, file3, 10);
 	cout<<"Text is: "<<txt_here<<endl;
 	cout<<"Done."<<endl;
 }
