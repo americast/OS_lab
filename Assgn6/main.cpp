@@ -6,8 +6,11 @@ struct block
 {
 	char* buf;
 	int len;
+	int i;
 	block* next_ptr;
 };
+
+typedef block my_file;
 
 struct FAT
 {
@@ -54,6 +57,8 @@ block* my_open(char *file_name)
 		blocks[i + 1] = here;
 		// cout<<"i is: "<<i<<endl;
 		((super_block *) blocks[0])->fat[i].ptr = here;
+		here->len = 0;
+		here->i = i;
 		((super_block *) blocks[0])->num_files++;
 		return here;
 	}
@@ -71,8 +76,8 @@ int my_write(block *file, char *text, int length)
 	do
 	{
 		int len_here, end_flag = 0;
-		if (length > block_size - sizeof(void *) - sizeof(int))
-			len_here = block_size - sizeof(void *) - sizeof(int);
+		if (length > block_size - sizeof(void *) - 2 * sizeof(int))
+			len_here = block_size - sizeof(void *) - 2 * sizeof(int);
 		else
 		{
 			len_here = length;
@@ -102,9 +107,10 @@ int my_write(block *file, char *text, int length)
 			if (found_flag)
 			{
 				block *here = (block *) malloc(sizeof(block));;
-				blocks[i] = here;
+				blocks[i + 1] = here;
 				file->next_ptr = here;
 				file = here;
+				file->i = i;
 			}
 			else
 			{
@@ -156,6 +162,25 @@ int my_cat(char *str)
 	}
 }
 
+block* my_copy(char *system_file, char *file_here)
+{
+	my_file *file = my_open(file_here);
+	FILE *s_file;
+	s_file = fopen(system_file,"rb");
+	fseek(s_file,0,SEEK_END);
+	int size = ftell(s_file);
+	char txt_here[size];
+	fseek(s_file, 0, SEEK_SET);
+	fread(txt_here, size, 1, s_file);
+	fclose(s_file);
+	int n = my_write(file, txt_here, size);
+	if (n >= 0)
+		return file;
+	else
+		return NULL;
+
+}
+
 int main()
 {
 	int sys_size, block_size;
@@ -181,7 +206,9 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		sb->free[i] = 0;
 
-	block *file = my_open("hello");
+	my_file *file = my_open("hello");
 	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61);
 	my_cat("hello");
+	my_file *file2 = my_copy("test", "test2");
+	my_cat("test2");
 }
