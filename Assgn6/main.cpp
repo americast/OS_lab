@@ -96,10 +96,7 @@ int my_erase(my_file *file)
 int my_write(block *file, char *text, int length, char mode)
 {
 	if (mode == 'w')
-	{
-		cout<<"Erasing"<<endl;
 		my_erase(file);
-	}
 	else
 	{
 		while(1)
