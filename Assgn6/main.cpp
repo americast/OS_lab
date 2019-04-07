@@ -24,12 +24,9 @@ struct DIR
 struct super_block
 {
 	int sys_size, num_blocks, block_size, num_files;
-	FAT* fat;
 	DIR* dir;
 	int* used;
 };
-
-
 
 void* *blocks;
 
@@ -38,8 +35,8 @@ my_file* my_open(char *file_name)
 	int num_files = ((super_block *) blocks[0])->num_files;
 	int i;
 	for (i = 0; i < num_files; i++)
-		if (strcmp(((super_block *) blocks[0])->fat[i].filename, file_name) == 0)
-			return ((super_block *) blocks[0])->fat[i].ptr;
+		if (strcmp(((FAT *) blocks[1])[i].filename, file_name) == 0)
+			return ((FAT *) blocks[1])[i].ptr;
 
 	int num_blocks = ((super_block *) blocks[0])->num_blocks;
 	int found = 0, pos;
@@ -57,12 +54,12 @@ my_file* my_open(char *file_name)
 	{
 		int i = pos;
 		((super_block *) blocks[0])->used[i] = 1;
-		strcpy(((super_block *) blocks[0])->fat[i].filename, file_name);
+		strcpy(((FAT *) blocks[1])[i].filename, file_name);
 		block *here = (block *) malloc(sizeof(block));
 		here->next_ptr = NULL;
-		blocks[i + 1] = here;
+		blocks[i + 2] = here;
 		// cout<<"i is: "<<i<<endl;
-		((super_block *) blocks[0])->fat[i].ptr = here;
+		((FAT *) blocks[1])[i].ptr = here;
 		here->len = 0;
 		here->i = i;
 		((super_block *) blocks[0])->num_files++;
@@ -145,7 +142,7 @@ int my_write(block *file, char *text, int length, char mode)
 			if (found_flag)
 			{
 				block *here = (block *) malloc(sizeof(block));;
-				blocks[i + 1] = here;
+				blocks[i + 2] = here;
 				file->next_ptr = here;
 				file = here;
 				file->i = i;
@@ -168,8 +165,8 @@ int my_cat(char *str)
 	int i, found = 0;
 	for (i = 0; i < num_files; i++)
 	{
-		// cout<<"Name of file is: "<<((super_block *) blocks[0])->fat[i].filename<<endl;
-		if (strcmp(((super_block *) blocks[0])->fat[i].filename, str) == 0)
+		// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
+		if (strcmp(((FAT *) blocks[1])[i].filename, str) == 0)
 		{
 			// cout<<"Found :D\n";
 			found = 1;
@@ -184,7 +181,7 @@ int my_cat(char *str)
 	}
 
 	// cout<<"and i is: "<<i<<endl;
-	block *here = ((super_block *) blocks[0])->fat[i].ptr;
+	block *here = ((FAT *) blocks[1])[i].ptr;
 	while(1)
 	{
 		int len = here->len;
@@ -265,12 +262,14 @@ int main()
 
 	blocks[0] = sb;
 
-	sb->fat = (FAT *) malloc(sizeof(FAT) * (num_blocks - 1));
-	sb->used = (int *) malloc(sizeof(int) * (num_blocks- 1));
+	// sb->fat = 
+	sb->used = (int *) malloc(sizeof(int) * (num_blocks));
 	sb->sys_size = sys_size;
 	sb->block_size = block_size;
 	sb->num_blocks = num_blocks;
 	sb->num_files = 0;
+
+	blocks[1] = (FAT *) malloc(sizeof(FAT) * (num_blocks));
 
 	for (int i = 0; i < num_blocks; i++)
 		sb->used[i] = 0;
