@@ -162,6 +162,32 @@ int my_cat(char *str)
 	}
 }
 
+void my_read(char *text, my_file *file, int len)
+{
+	int num_files = ((super_block *) blocks[0])->num_files;
+	int i = 0;
+	block *here = file;
+	while(1)
+	{
+		int len = here->len;
+		// cout<<"len is "<<len<<endl;
+		char *now = here->buf;
+		for (int j = 0; j < len; j++)
+		{
+			text[i++] = now[j];
+			if (i >= len)
+				return;
+		}
+		if (here->next_ptr != NULL)
+			here = here->next_ptr;
+		else
+		{
+			text[i] = '\0';
+			break;
+		}
+	}
+}
+
 block* my_copy(char *system_file, char *file_here)
 {
 	my_file *file = my_open(file_here);
@@ -169,9 +195,12 @@ block* my_copy(char *system_file, char *file_here)
 	s_file = fopen(system_file,"rb");
 	fseek(s_file,0,SEEK_END);
 	int size = ftell(s_file);
+	// cout<<"size is: "<<size<<endl;
 	char txt_here[size];
 	fseek(s_file, 0, SEEK_SET);
 	fread(txt_here, size, 1, s_file);
+	txt_here[size - 1] = '\0';
+	// cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
 	fclose(s_file);
 	int n = my_write(file, txt_here, size);
 	if (n >= 0)
@@ -210,5 +239,8 @@ int main()
 	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61);
 	my_cat("hello");
 	my_file *file2 = my_copy("test", "test2");
-	my_cat("test2");
+	char txt_here[100];
+	my_read(txt_here, file2, 10);
+	cout<<"Text is: "<<txt_here<<endl;
+	cout<<"Done."<<endl;
 }
