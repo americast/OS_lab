@@ -2,10 +2,17 @@
 #include <math.h>
 using namespace std;
 
+struct block
+{
+	char* buf;
+	int len;
+	block* next_ptr;
+};
+
 struct FAT
 {
 	char filename[100];
-	void* ptr;
+	block* ptr;
 };
 
 struct DIR
@@ -13,17 +20,12 @@ struct DIR
 
 struct super_block
 {
-	int sys_size, num_blocks, block_size;
+	int sys_size, num_blocks, block_size, num_files;
 	FAT* fat;
 	DIR* dir;
 	int* free;
 };
 
-struct block
-{
-	char* buf;
-	void* next_ptr;
-};
 
 
 void* *blocks;
@@ -32,7 +34,7 @@ block* my_open(char *file_name)
 {
 	int num_blocks = ((super_block *) blocks[0])->num_blocks;
 	int found = 0, pos;
-	cout<<"num_blocks: "<<num_blocks<<endl;
+	// cout<<"num_blocks: "<<num_blocks<<endl;
 	for (int i = 0; i < num_blocks - 1; i++)
 	{
 		if (((super_block *) blocks[0])->free[i] == 0)
@@ -50,7 +52,9 @@ block* my_open(char *file_name)
 		block *here = (block *) malloc(sizeof(block));
 		here->next_ptr = NULL;
 		blocks[i + 1] = here;
+		// cout<<"i is: "<<i<<endl;
 		((super_block *) blocks[0])->fat[i].ptr = here;
+		((super_block *) blocks[0])->num_files++;
 		return here;
 	}
 	else
@@ -67,8 +71,8 @@ int my_write(block *file, char *text, int length)
 	do
 	{
 		int len_here, end_flag = 0;
-		if (length > block_size - sizeof(void *))
-			len_here = block_size - sizeof(void *);
+		if (length > block_size - sizeof(void *) - sizeof(int))
+			len_here = block_size - sizeof(void *) - sizeof(int);
 		else
 		{
 			len_here = length;
@@ -78,6 +82,7 @@ int my_write(block *file, char *text, int length)
 		memcpy(file->buf, text + count, len_here);
 		count+=len_here;
 		length-=len_here;
+		file->len = len_here;
 		if (end_flag)
 		{
 			file->next_ptr = NULL;
@@ -111,6 +116,46 @@ int my_write(block *file, char *text, int length)
 	return length;
 }
 
+int my_cat(char *str)
+{
+	int num_files = ((super_block *) blocks[0])->num_files;
+	int i, found = 0;
+	for (i = 0; i < num_files; i++)
+	{
+		// cout<<"Name of file is: "<<((super_block *) blocks[0])->fat[i].filename<<endl;
+		if (strcmp(((super_block *) blocks[0])->fat[i].filename, str) == 0)
+		{
+			// cout<<"Found :D\n";
+			found = 1;
+			break;
+		}
+	}
+
+	if (!found)
+	{
+		fprintf(stderr, "File not found\n");
+		return -1;
+	}
+
+	// cout<<"and i is: "<<i<<endl;
+	block *here = ((super_block *) blocks[0])->fat[i].ptr;
+	while(1)
+	{
+		int len = here->len;
+		// cout<<"len is "<<len<<endl;
+		char *now = here->buf;
+		for (int j = 0; j < len; j++)
+			cout<<now[j];
+		if (here->next_ptr != NULL)
+			here = here->next_ptr;
+		else
+		{
+			cout<<endl;
+			return 0;
+		}
+	}
+}
+
 int main()
 {
 	int sys_size, block_size;
@@ -131,10 +176,12 @@ int main()
 	sb->sys_size = sys_size;
 	sb->block_size = block_size;
 	sb->num_blocks = num_blocks;
+	sb->num_files = 0;
 
 	for (int i = 0; i < num_blocks; i++)
 		sb->free[i] = 0;
 
 	block *file = my_open("hello");
-	my_write(file, "text", 5);
+	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61);
+	my_cat("hello");
 }
