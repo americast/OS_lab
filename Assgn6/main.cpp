@@ -2,15 +2,7 @@
 #include <math.h>
 using namespace std;
 
-struct block
-{
-	char* buf;
-	// int len;
-	// int i;
-	// block* next_ptr;
-};
-
-typedef block my_file;
+// typedef block my_file;
 
 // struct FAT
 // {
@@ -34,10 +26,12 @@ super_block_constants *sbc;
 int* used;
 vol_info* filename_map;
 int *fat;
-block *other_blocks;
+char* other_blocks;
 
 int my_open(char *file_name)
 {
+	int tot_block_size = sbc->block_size * pow(2, 10);
+
 	int num_files = sbc->num_files;
 	int i;
 	for (i = 0; i < num_files; i++)
@@ -72,132 +66,131 @@ int my_open(char *file_name)
 	}
 }
 
-// int my_erase(my_file *file)
-// {
-// 	if (((super_block *) blocks[0])->used[file->i] == 0)
-// 		return -1;
-// 	my_file* file_org = file;
-// 	while(1)
-// 	{
-// 		file->len = 0;
-// 		if (file->next_ptr == NULL)
-// 			break;
-// 		file = file->next_ptr;
-// 		int i = file->i;
-// 		((super_block *) blocks[0])->used[i] = 0;
-// 	}
-// 	file_org->next_ptr = NULL;
-// 	return 1;
-// }
+int my_erase(int file)
+{
+	if (used[file] == 0)
+		return -1;
+	int file_org = file;
+	while(1)
+	{
+		// file->len = 0;
+		if (fat[file] == -1)
+			break;
+		file = fat[file];
+		used[file] = 0;
+	}
+	fat[file_org] = -1;
+	return 1;
+}
 
-// int my_write(block *file, char *text, int length, char mode)
-// {
-// 	if (mode == 'w')
-// 		my_erase(file);
-// 	else
-// 	{
-// 		while(1)
-// 			if (file->next_ptr == NULL)
-// 				break;
-// 			else
-// 				file = file->next_ptr;
+int my_write(int file, char *text, int length, char mode)
+{
+	if (mode == 'w')
+		my_erase(file);
+	else
+	{
+		while(1)
+			if (fat[file] == -1)
+				break;
+			else
+				file = fat[file];
 
-// 	}
-// 	int block_size = ((super_block *) blocks[0])->block_size;
-// 	int count = 0;
-// 	do
-// 	{
-// 		int len_here, end_flag = 0;
-// 		if (length > block_size - sizeof(void *) - 2 * sizeof(int) - file->len)
-// 			len_here = block_size - sizeof(void *) - 2 * sizeof(int) - file->len;
-// 		else
-// 		{
-// 			len_here = length;
-// 			end_flag = 1;
-// 		}
-// 		if (file->len == 0)
-// 			file->buf = (char *) malloc(sizeof(char) * len_here);
-// 		else
-// 			file->buf = (char *) realloc(file->buf, sizeof(char) * (file->len + len_here));
-// 		memcpy(file->buf + file->len, text + count, len_here);
-// 		count+=len_here;
-// 		length-=len_here;
-// 		file->len = file->len + len_here;
-// 		if (end_flag)
-// 		{
-// 			file->next_ptr = NULL;
-// 			break;
-// 		}
-// 		else
-// 		{
-// 			int i, found_flag = 0;
-// 			for (i = 0; i < ((super_block *)blocks[0])->num_blocks - 1; i++)
-// 			{
-// 				if (((super_block *)blocks[0])->used[i] == 0)
-// 				{
-// 					found_flag = 1;
-// 					break;
-// 				}
-// 			}
-// 			if (found_flag)
-// 			{
-// 				block *here = (block *) malloc(sizeof(block));;
-// 				blocks[i + 2] = here;
-// 				file->next_ptr = here;
-// 				file = here;
-// 				file->i = i;
-// 				file->len = 0;
-// 			}
-// 			else
-// 			{
-// 				fprintf(stderr, "Out of disk space\n");
-// 				return -1;
-// 			}
-// 		}
-// 	}while (length > 0);
-// 	return length;
-// }
+	}
+	int block_size = sbc->block_size;
+	int count = 0;
+	do
+	{
+		int len_here, end_flag = 0;
+		if (length > block_size - 1 - strlen(other_blocks + sbc->block_size * file))
+			len_here = block_size - 1 - strlen(other_blocks + sbc->block_size * file);
+		else
+		{
+			len_here = length;
+			end_flag = 1;
+		}
+		char *write_here;
+		if (strlen(other_blocks + sbc->block_size * file) == 0)
+			write_here = other_blocks + sbc->block_size * file;
+		else
+			write_here = (other_blocks + sbc->block_size * file + strlen(other_blocks + sbc->block_size * file));
+		memcpy(write_here, text + count, len_here);
+		write_here[len_here] = '\0';
+		count+=len_here;
+		length-=len_here;
+		// file->len = file->len + len_here;
+		if (end_flag)
+		{
+			fat[file] = -1;
+			break;
+		}
+		else
+		{
+			int i, found_flag = 0;
+			for (i = 0; i < sbc->num_blocks; i++)
+			{
+				if (used[i] == 0)
+				{
+					found_flag = 1;
+					break;
+				}
+			}
+			if (found_flag)
+			{
+				fat[file] = i;
+				used[i] = 1;
+				file = i;
+			}
+			else
+			{
+				fprintf(stderr, "Out of disk space\n");
+				return -1;
+			}
+		}
+	}while (length > 0);
+	return length;
+}
 
 
-// int my_cat(char *str)
-// {
-// 	int num_files = ((super_block *) blocks[0])->num_files;
-// 	int i, found = 0;
-// 	for (i = 0; i < num_files; i++)
-// 	{
-// 		// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
-// 		if (filename_map[i].filename, str) == 0)
-// 		{
-// 			// cout<<"Found :D\n";
-// 			found = 1;
-// 			break;
-// 		}
-// 	}
+int my_cat(char *str)
+{
+	int num_files = sbc->num_files;
+	int i, found = 0;
+	for (i = 0; i < num_files; i++)
+	{
+		// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
+		if (strcmp(filename_map[i].filename, str) == 0)
+		{
+			// cout<<"Found :D\n";
+			found = 1;
+			break;
+		}
+	}
 
-// 	if (!found)
-// 	{
-// 		fprintf(stderr, "File not found\n");
-// 		return -1;
-// 	}
+	if (!found)
+	{
+		fprintf(stderr, "File not found\n");
+		return -1;
+	}
 
-// 	// cout<<"and i is: "<<i<<endl;
-// 	block *here = ((FAT *) blocks[1])[i].ptr;
-// 	while(1)
-// 	{
-// 		int len = here->len;
-// 		// cout<<"len is "<<len<<endl;
-// 		char *now = here->buf;
-// 		for (int j = 0; j < len; j++)
-// 			cout<<now[j];
-// 		if (here->next_ptr != NULL)
-// 			here = here->next_ptr;
-// 		else
-// 		{
-// 			cout<<endl;
-// 			return 0;
-// 		}
-// 	}
-// }
+	// cout<<"and i is: "<<i<<endl;
+	// block *here = ((FAT *) blocks[1])[i].ptr;
+	int index = filename_map[i].index;
+	while(1)
+	{
+		// int len = here->len;
+		// cout<<"len is "<<len<<endl;
+		char *now = other_blocks + sbc->block_size * index;
+		// for (int j = 0; j < len; j++)
+		cout<<now;
+		if (fat[index] != -1)
+			index = fat[index];
+		else
+		{
+			cout<<endl;
+			return 0;
+		}
+	}
+}
 
 // void my_read(char *text, my_file *file, int len)
 // {
@@ -287,15 +280,22 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		fat[i] = -1;
 
-	other_blocks = (block *) (fat + num_blocks);
+	other_blocks = (char *) (blocks + sizeof(sbc) + (2 * sizeof(int) + sizeof(filename_map)) * num_blocks);
+
+
+	for (int i = 0; i < num_blocks; i++)
+	{
+		// printf("%d\n%d\n", blocks, other_blocks);
+		strcpy(other_blocks + (i * sbc->block_size), "\0");
+	}
 
 
 
 	// API testing
 
 	int file = my_open("hello");
-	// my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61, 'w');
-	// my_cat("hello");
+	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61, 'w');
+	my_cat("hello");
 	// my_write(file, "hello", 5, 'w');
 	// my_cat("hello");
 	// my_write(file, " ja gelo", 8, 'a');
