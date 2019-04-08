@@ -18,6 +18,7 @@ struct FDT
 {
 	int index;
 	int seek;
+	int w_seek;
 	int use;
 };
 
@@ -55,6 +56,7 @@ int add_to_fdt(int index)
 		{
 			fdt[i].use = 1;
 			fdt[i].seek = 0;
+			fdt[i].w_seek = 0;
 			fdt[i].index = index;
 			return i;
 		}
@@ -126,19 +128,51 @@ int my_erase(int file)				// Erases file contents, but not the file
 	return 1;
 }
 
+void set_seekw(int file, int val)
+{
+	fdt[file].w_seek = val;
+}
+
+void set_seekr(int file, int val)
+{
+	fdt[file].seek = val;
+}
+
 int my_write(int file, char *text, int length, char mode)		// Writes to a file
 {
+	int org_file = file;
+	int w_seek = fdt[org_file].w_seek;
 	file = index_from_fdt(file);
 	if (mode == 'w')
-		my_erase(file);
-	else
 	{
+		w_seek = 0;
+		my_erase(file);
+	}
+	else if (mode == 'a')
+	{
+		w_seek = 0;
 		while(1)
 			if (fat[file] == -1)
 				break;
 			else
 				file = fat[file];
 
+	}
+	else
+	{
+		int reached_end = 0;
+		while(w_seek > sbc->block_size)
+		{
+			if (fat[file] == -1)
+			{
+				reached_end = 1;
+				break;
+			}
+			file = fat[file];
+			w_seek -= sbc->block_size;
+		}
+		if (!reached_end)
+			*(other_blocks + ((sbc->block_size * file) + w_seek)) = '\0';
 	}
 	int block_size = sbc->block_size;
 	int count = 0;
@@ -158,7 +192,8 @@ int my_write(int file, char *text, int length, char mode)		// Writes to a file
 		else
 			write_here = (other_blocks + sbc->block_size * file + strlen(other_blocks + sbc->block_size * file));
 		memcpy(write_here, text + count, len_here);
-		write_here[len_here] = '\0';
+		if (mode != 's')
+			write_here[len_here] = '\0';
 		count+=len_here;
 		length-=len_here;
 		// file->len = file->len + len_here;
@@ -357,18 +392,25 @@ int main()
 	int file = my_open("hello");
 	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
 	my_cat("hello");
+
 	my_write(file, "test1", 5, 'w');
 	my_cat("hello");
+
 	my_write(file, " test 2 test3", 8, 'a');
 	my_cat("hello");
+
 	int file2 = my_copy("test", "test2");
 	int file3 = my_open("test2");
 	my_cat("test2");
+
 	char txt_here[100];
 	my_read(txt_here, file3, 7);
 	cout<<"Text is: "<<txt_here<<endl;
 	my_read(txt_here, file3, 3);
 	cout<<"Text is: "<<txt_here<<endl;
+	set_seekw(file2, 2);
+	my_write(file2, "K", 1, 's');
+	my_cat("test2");
 	my_close(file2);
 	my_read(txt_here, file2, 7);
 	cout<<"Done."<<endl;
