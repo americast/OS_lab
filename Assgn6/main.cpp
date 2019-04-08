@@ -24,6 +24,7 @@ struct vol_info
 void* *blocks;
 super_block_constants *sbc;
 int* used;
+int* seek;	// Needed for file reading
 vol_info* filename_map;
 int *fat;
 char* other_blocks;
@@ -201,18 +202,26 @@ void my_read(char *text, int file, int len)
 	// int num_files = sbc->num_files;
 	int i = 0;
 	int here = file;
+	int seek_here = seek[file];
 	// here = 5;
 	while(1)
 	{
 		// int len = here->len;
 		// cout<<"len is "<<len<<endl;
 		char *now = other_blocks + (here * sbc->block_size);
-		for (int j = 0; j < strlen(now); j++)
+		if (seek_here < (sbc->block_size))
 		{
-			text[i++] = now[j];
-			if (i >= len)
-				return;
+			now+=seek_here;
+			for (int j = 0; j < strlen(now); j++)
+			{
+				text[i++] = now[j];
+				seek[file]++;
+				if (i >= len)
+					return;
+			}	
 		}
+		else
+			seek_here -= sbc->block_size;
 		if (fat[here] != -1)
 			here = fat[here];
 		else
@@ -273,7 +282,12 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		used[i] = 0;
 
-	filename_map = (vol_info *) (used + num_blocks);
+	seek = (int *) (used + num_blocks);
+
+	for (int i = 0; i < num_blocks; i++)
+		seek[i] = 0;
+
+	filename_map = (vol_info *) (seek + num_blocks);
 	for (int i = 0; i < num_blocks; i++)
 	{
 		strcpy(filename_map[i].filename, "");
