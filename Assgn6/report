@@ -1,0 +1,57 @@
+************************************ ASSIGNMENT : 6 REPORT ************************************
+
+                               NAME       :  Swastika Dutta
+                               ROLL NO. : 16CS10060
+
+*********************************************************************************************************
+
+Implement a Memory Resident File System (using FAT)
+
+*********************************************************************************************************
+
+The following user defined datatypes were used:
+
+struct FDT
+{
+    int index;
+    int seek;
+    int use;
+};
+
+struct super_block_constants
+{
+    int sys_size, num_blocks, block_size, num_files;
+};
+
+struct vol_info
+{
+    char filename[100];
+    int index;
+};
+
+FDT is assumed to be stored in RAM and the rest are in the disk. The super block contains super_block_constants, the use bit array and the vol_info array. Block 1 contains the FAT which is an integer array with each element pointing to the index of the next block, if present, else to -1.
+Block 2 onwards, data is stored as a char array buffer. The max no of blocks possible is computed before allocation. The entire implementation is contiguous.
+
+
+Function documentation:
+
+int my_open(char *filename);
+// creates a new file if it does not exist, or opens an already opened file. Returns a file descriptor integer
+
+int my_close(int file);
+// removes file from FDT and return 1 upon success, else -1
+
+void my_read(char *text, int file, int len)
+// copies len no of characters from file to text char buffer updating the seek.
+
+int my_write(int file, char *text, int len, char mode)
+// write len no of characters from text to file and returns the no of characters written. Mode ‘w’ overwrites the file, and mode ‘a’ appends to the file.
+
+int my_copy(char *system_file, char *file_here)
+
+// Copies a file from system named by system_file to a file named by file_here in the virtual system. Returns the file descriptor int. If the same named file already exists, it is overwritten.
+
+int my_cat(char *str)
+
+// Prints content of a file named by str. Return 1 upon success and -1 upon failure (if file not found).
+

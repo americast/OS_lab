@@ -1,14 +1,18 @@
+/***************************************************
+
+                    ASSIGNMENT 6 - 1
+
+    Group No.: 42
+
+    Members:    Swastika Dutta  (16CS10060)
+                Sayan Sinha     (16CS10048)
+
+****************************************************/
+
+
 #include <bits/stdc++.h>
 #include <math.h>
 using namespace std;
-
-// typedef block my_file;
-
-// struct FAT
-// {
-// 	char filename[100];
-// 	block* ptr;
-// };
 
 struct FDT
 {
@@ -17,7 +21,7 @@ struct FDT
 	int use;
 };
 
-FDT* fdt;
+FDT* fdt;		// Pointer to FDT which is in RAM
 
 struct super_block_constants
 {
@@ -31,19 +35,22 @@ struct vol_info
 };
 
 void* *blocks;
+
+////////////// BLOCK 0 /////////////
 super_block_constants *sbc;
 int* used;
-int* seek;	// Needed for file reading
 vol_info* filename_map;
+
+////////////// Block 1 /////////////
 int *fat;
+
+////////////// Block 2 onwards //////////
 char* other_blocks;
 
 int add_to_fdt(int index)
 {
 	for (int i = 0; i < sbc->num_blocks; i++)
 	{
-		// cout<<"i "<<i<<endl;
-		// cout<<"use "<<fdt[i].use<<endl;
 		if (fdt[i].use == 0)
 		{
 			fdt[i].use = 1;
@@ -65,7 +72,7 @@ int index_from_fdt(int fdt_index)
 	}
 }
 
-int my_open(char *file_name)
+int my_open(char *file_name)		// To reopen a file or create a new one
 {
 	int tot_block_size = sbc->block_size * pow(2, 10);
 
@@ -74,11 +81,9 @@ int my_open(char *file_name)
 	for (i = 0; i < num_files; i++)
 		if (strcmp(filename_map[i].filename, file_name) == 0)
 			return add_to_fdt(filename_map[i].index);
-	// cout<<"Not found!"<<endl;
 
 	int num_blocks = sbc->num_blocks;
 	int found = 0, pos;
-	// cout<<"num_blocks: "<<num_blocks<<endl;
 	for (int i = 0; i < num_blocks; i++)
 	{
 		if (used[i] == 0)
@@ -104,7 +109,7 @@ int my_open(char *file_name)
 	}
 }
 
-int my_erase(int file)
+int my_erase(int file)				// Erases file contents, but not the file
 {
 	if (used[file] == 0)
 		return -1;
@@ -112,19 +117,16 @@ int my_erase(int file)
 	while(1)
 	{
 		strcpy(other_blocks + (file * sbc->block_size), "\0");
-		// memcpy(other_blocks + (file * sbc->block_size), 0, 1);
-		// file->len = 0;
 		if (fat[file] == -1)
 			break;
 		file = fat[file];
 		used[file] = 0;
 	}
 	fat[file_org] = -1;
-	// memcpy(other_blocks + file_org*
 	return 1;
 }
 
-int my_write(int file, char *text, int length, char mode)
+int my_write(int file, char *text, int length, char mode)		// Writes to a file
 {
 	file = index_from_fdt(file);
 	if (mode == 'w')
@@ -192,7 +194,7 @@ int my_write(int file, char *text, int length, char mode)
 	return length;
 }
 
-int my_close(int file)
+int my_close(int file)		// Closes the descriptor to a file
 {
 	if (fdt[file].use)
 	{
@@ -228,15 +230,10 @@ int my_cat(char *str)
 		return -1;
 	}
 
-	// cout<<"and i is: "<<i<<endl;
-	// block *here = ((FAT *) blocks[1])[i].ptr;
 	int index = filename_map[i].index;
 	while(1)
 	{
-		// int len = here->len;
-		// cout<<"len is "<<len<<endl;
 		char *now = other_blocks + sbc->block_size * index;
-		// for (int j = 0; j < len; j++)
 		cout<<now;
 		if (fat[index] != -1)
 			index = fat[index];
@@ -256,13 +253,8 @@ void my_read(char *text, int file, int len)
 	int i = 0;
 	int here = file;
 	int seek_here = fdt[fdt_file].seek;
-	// cout<<"Seek here "<<seek_here<<endl;
-	// cout<<"File here "<<file<<endl;
-	// here = 5;
 	while(1)
 	{
-		// int len = here->len;
-		// cout<<"len is "<<len<<endl;
 		char *now = other_blocks + (here * sbc->block_size);
 		if (seek_here < (sbc->block_size))
 		{
@@ -315,7 +307,7 @@ int main()
 	cin>>sys_size;
 	cout<<"\nEnter size of one block in KB: ";
 	cin>>block_size;
-	int num_blocks = ((sys_size * pow(2, 20)) - (sizeof(super_block_constants)) ) / ((block_size * pow(2, 10)) + (3 * sizeof(int) + sizeof(vol_info)));
+	int num_blocks = ((sys_size * pow(2, 20)) - (sizeof(super_block_constants)) ) / ((block_size * pow(2, 10)) + (2 * sizeof(int) + sizeof(vol_info)));
 	cout<<"Num blocks in main: "<<num_blocks<<endl;
 	blocks = (void **) malloc(sys_size * pow(2, 20));
 
@@ -340,12 +332,7 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		used[i] = 0;
 
-	seek = (int *) (used + num_blocks);
-
-	for (int i = 0; i < num_blocks; i++)
-		seek[i] = 0;
-
-	filename_map = (vol_info *) (seek + num_blocks);
+	filename_map = (vol_info *) (used + num_blocks);
 	for (int i = 0; i < num_blocks; i++)
 	{
 		strcpy(filename_map[i].filename, "");
@@ -357,35 +344,25 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		fat[i] = -1;
 
-	other_blocks = (char *) (blocks + (sizeof(sbc) + (3 * sizeof(int) + sizeof(vol_info)) * (num_blocks)) / sizeof(void *));
-	// cout<<"Offset: "<<sizeof(sbc) + (3 * sizeof(int) + sizeof(vol_info)) * (num_blocks - 2)<<endl;
+	other_blocks = (char *) (blocks + (sizeof(sbc) + (2 * sizeof(int) + sizeof(vol_info)) * (num_blocks)) / sizeof(void *));
 
 
 	for (int i = 0; i < num_blocks ; i++)
-	{
-		// printf("%d\n%d\n", blocks, other_blocks);
-		// cout<<i<<endl;
-		// printf("Pos now: %d\n", other_blocks + (i * sbc->block_size));
 		strcpy(other_blocks + (i * sbc->block_size), "\0");
-	}
 
 
 
 	// API testing
 
 	int file = my_open("hello");
-	// cout<<"file is "<<file<<endl;
-	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61, 'w');
+	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
 	my_cat("hello");
-	my_write(file, "hello", 5, 'w');
+	my_write(file, "test1", 5, 'w');
 	my_cat("hello");
-	my_write(file, " ja gelo", 8, 'a');
+	my_write(file, " test 2 test3", 8, 'a');
 	my_cat("hello");
 	int file2 = my_copy("test", "test2");
-	// cout<<"file2 is "<<file2<<endl;
 	int file3 = my_open("test2");
-	// cout<<"file3 is "<<file3<<endl;
-	// cout<<"file file2 file3 "<<file<<" "<<file2<<" "<<file3<<endl;
 	my_cat("test2");
 	char txt_here[100];
 	my_read(txt_here, file3, 7);
