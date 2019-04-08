@@ -261,7 +261,7 @@ int main()
 	cin>>sys_size;
 	cout<<"\nEnter size of one block in KB: ";
 	cin>>block_size;
-	int num_blocks = (sys_size * pow(2, 20) - (sizeof(super_block_constants)) ) / (block_size * pow(2, 10) + (2 * sizeof(int)));
+	int num_blocks = ((sys_size * pow(2, 20)) - (sizeof(super_block_constants)) ) / ((block_size * pow(2, 10)) + (3 * sizeof(int) + sizeof(vol_info)));
 	cout<<"Num blocks in main: "<<num_blocks<<endl;
 	blocks = (void **) malloc(sys_size * pow(2, 20));
 
@@ -272,8 +272,8 @@ int main()
 
 	// sb->fat = 
 	// sb->used = (int *) malloc(sizeof(int) * (num_blocks));
-	sbc->sys_size = sys_size;
-	sbc->block_size = block_size;
+	sbc->sys_size = sys_size * pow(2, 20);
+	sbc->block_size = block_size * pow(2, 10);
 	sbc->num_blocks = num_blocks;
 	sbc->num_files = 0;
 
@@ -299,12 +299,15 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		fat[i] = -1;
 
-	other_blocks = (char *) (blocks + sizeof(sbc) + (2 * sizeof(int) + sizeof(filename_map)) * num_blocks);
+	other_blocks = (char *) (blocks + (sizeof(sbc) + (3 * sizeof(int) + sizeof(vol_info)) * (num_blocks)) / sizeof(void *));
+	// cout<<"Offset: "<<sizeof(sbc) + (3 * sizeof(int) + sizeof(vol_info)) * (num_blocks - 2)<<endl;
 
 
-	for (int i = 0; i < num_blocks; i++)
+	for (int i = 0; i < num_blocks ; i++)
 	{
 		// printf("%d\n%d\n", blocks, other_blocks);
+		// cout<<i<<endl;
+		// printf("Pos now: %d\n", other_blocks + (i * sbc->block_size));
 		strcpy(other_blocks + (i * sbc->block_size), "\0");
 	}
 
@@ -323,7 +326,9 @@ int main()
 	int file3 = my_open("test2");
 	my_cat("test2");
 	char txt_here[100];
-	my_read(txt_here, file3, 10);
+	my_read(txt_here, file3, 7);
+	cout<<"Text is: "<<txt_here<<endl;
+	my_read(txt_here, file3, 3);
 	cout<<"Text is: "<<txt_here<<endl;
 	cout<<"Done."<<endl;
 }
