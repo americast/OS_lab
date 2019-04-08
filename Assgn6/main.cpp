@@ -56,7 +56,13 @@ int add_to_fdt(int index)
 
 int index_from_fdt(int fdt_index)
 {
-	return fdt[fdt_index].index;
+	if (fdt[fdt_index].use)
+		return fdt[fdt_index].index;
+	else
+	{
+		fprintf(stderr, "Virtual segfault\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 int my_open(char *file_name)
@@ -184,6 +190,20 @@ int my_write(int file, char *text, int length, char mode)
 		}
 	}while (length > 0);
 	return length;
+}
+
+int my_close(int file)
+{
+	if (fdt[file].use)
+	{
+		fdt[file].use = 0;
+		return 1;
+	}
+	else
+	{
+		fprintf(stderr, "File already closed\n");
+		return -1;
+	}
 }
 
 
@@ -372,5 +392,7 @@ int main()
 	cout<<"Text is: "<<txt_here<<endl;
 	my_read(txt_here, file3, 3);
 	cout<<"Text is: "<<txt_here<<endl;
+	my_close(file2);
+	my_read(txt_here, file2, 7);
 	cout<<"Done."<<endl;
 }
