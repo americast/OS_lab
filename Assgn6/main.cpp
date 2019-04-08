@@ -218,27 +218,27 @@ int my_cat(char *str)
 // 	}
 // }
 
-// my_file* my_copy(char *system_file, char *file_here)
-// {
-// 	my_file *file = my_open(file_here);
-// 	FILE *s_file;
-// 	s_file = fopen(system_file,"rb");
-// 	fseek(s_file,0,SEEK_END);
-// 	int size = ftell(s_file);
-// 	// cout<<"size is: "<<size<<endl;
-// 	char txt_here[size];
-// 	fseek(s_file, 0, SEEK_SET);
-// 	fread(txt_here, size, 1, s_file);
-// 	txt_here[size - 1] = '\0';
-// 	// cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
-// 	fclose(s_file);
-// 	int n = my_write(file, txt_here, size, 'w');
-// 	if (n >= 0)
-// 		return file;
-// 	else
-// 		return NULL;
+int my_copy(char *system_file, char *file_here)
+{
+	int file = my_open(file_here);
+	FILE *s_file;
+	s_file = fopen(system_file,"rb");
+	fseek(s_file,0,SEEK_END);
+	int size = ftell(s_file);
+	// cout<<"size is: "<<size<<endl;
+	char txt_here[size];
+	fseek(s_file, 0, SEEK_SET);
+	fread(txt_here, size, 1, s_file);
+	txt_here[size - 1] = '\0';
+	// cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
+	fclose(s_file);
+	int n = my_write(file, txt_here, size, 'w');
+	if (n >= 0)
+		return file;
+	else
+		return NULL;
 
-// }
+}
 
 int main()
 {
@@ -300,8 +300,9 @@ int main()
 	// my_cat("hello");
 	// my_write(file, " ja gelo", 8, 'a');
 	// my_cat("hello");
-	// my_file *file2 = my_copy("test", "test2");
-	// my_file *file3 = my_open("test2");
+	int file2 = my_copy("test", "test2");
+	int file3 = my_open("test2");
+	my_cat("test2");
 	// char txt_here[100];
 	// my_read(txt_here, file3, 10);
 	// cout<<"Text is: "<<txt_here<<endl;
