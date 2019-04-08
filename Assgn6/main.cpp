@@ -35,8 +35,9 @@ int my_open(char *file_name)
 	int num_files = sbc->num_files;
 	int i;
 	for (i = 0; i < num_files; i++)
-		if ((filename_map[i].filename, file_name) == 0)
+		if (strcmp(filename_map[i].filename, file_name) == 0)
 			return filename_map[i].index;
+	// cout<<"Not found!"<<endl;
 
 	int num_blocks = sbc->num_blocks;
 	int found = 0, pos;
@@ -197,14 +198,15 @@ int my_cat(char *str)
 
 void my_read(char *text, int file, int len)
 {
-	int num_files = sbc->num_files;
+	// int num_files = sbc->num_files;
 	int i = 0;
 	int here = file;
+	// here = 5;
 	while(1)
 	{
 		// int len = here->len;
 		// cout<<"len is "<<len<<endl;
-		char *now = other_blocks + here * sbc->block_size;
+		char *now = other_blocks + (here * sbc->block_size);
 		for (int j = 0; j < strlen(now); j++)
 		{
 			text[i++] = now[j];
