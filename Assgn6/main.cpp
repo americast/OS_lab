@@ -73,6 +73,8 @@ int my_erase(int file)
 	int file_org = file;
 	while(1)
 	{
+		strcpy(other_blocks + (file * sbc->block_size), "\0");
+		// memcpy(other_blocks + (file * sbc->block_size), 0, 1);
 		// file->len = 0;
 		if (fat[file] == -1)
 			break;
@@ -80,6 +82,7 @@ int my_erase(int file)
 		used[file] = 0;
 	}
 	fat[file_org] = -1;
+	// memcpy(other_blocks + file_org*
 	return 1;
 }
 
@@ -192,31 +195,31 @@ int my_cat(char *str)
 	}
 }
 
-// void my_read(char *text, my_file *file, int len)
-// {
-// 	int num_files = ((super_block *) blocks[0])->num_files;
-// 	int i = 0;
-// 	block *here = file;
-// 	while(1)
-// 	{
-// 		int len = here->len;
-// 		// cout<<"len is "<<len<<endl;
-// 		char *now = here->buf;
-// 		for (int j = 0; j < len; j++)
-// 		{
-// 			text[i++] = now[j];
-// 			if (i >= len)
-// 				return;
-// 		}
-// 		if (here->next_ptr != NULL)
-// 			here = here->next_ptr;
-// 		else
-// 		{
-// 			text[i] = '\0';
-// 			break;
-// 		}
-// 	}
-// }
+void my_read(char *text, int file, int len)
+{
+	int num_files = sbc->num_files;
+	int i = 0;
+	int here = file;
+	while(1)
+	{
+		// int len = here->len;
+		// cout<<"len is "<<len<<endl;
+		char *now = other_blocks + here * sbc->block_size;
+		for (int j = 0; j < strlen(now); j++)
+		{
+			text[i++] = now[j];
+			if (i >= len)
+				return;
+		}
+		if (fat[here] != -1)
+			here = fat[here];
+		else
+		{
+			text[i] = '\0';
+			break;
+		}
+	}
+}
 
 int my_copy(char *system_file, char *file_here)
 {
@@ -296,15 +299,15 @@ int main()
 	int file = my_open("hello");
 	my_write(file, "uerhfuerhfuihrfuhrukfhkfhskhfkshfksdhfkdshkdjcdjkckdcjkdbckddbc", 61, 'w');
 	my_cat("hello");
-	// my_write(file, "hello", 5, 'w');
-	// my_cat("hello");
-	// my_write(file, " ja gelo", 8, 'a');
-	// my_cat("hello");
+	my_write(file, "hello", 5, 'w');
+	my_cat("hello");
+	my_write(file, " ja gelo", 8, 'a');
+	my_cat("hello");
 	int file2 = my_copy("test", "test2");
 	int file3 = my_open("test2");
 	my_cat("test2");
-	// char txt_here[100];
-	// my_read(txt_here, file3, 10);
-	// cout<<"Text is: "<<txt_here<<endl;
-	// cout<<"Done."<<endl;
+	char txt_here[100];
+	my_read(txt_here, file3, 10);
+	cout<<"Text is: "<<txt_here<<endl;
+	cout<<"Done."<<endl;
 }
