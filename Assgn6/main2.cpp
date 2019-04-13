@@ -63,7 +63,7 @@ void* blocks;
 vol_info* filename_map;
 inode* inodes;
 
-int curr_dir;
+int curr_dir, curr_dir_inode = 0;
 
 int add_to_fdt(int index)
 {
@@ -104,51 +104,40 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 	}
 
 	int num_blocks = sbc->num_blocks;
-	int pos = sbc->free_ptr;
-	if (pos)
+	int inode_pos, dir_pos;
+	for (int i = 0; i < sbc->num_blocks; i++)
 	{
-		void* block_here = (blocks + (pos * sbc->block_size));
-		sbc->free_ptr = ((free_block*) (blocks + (pos * sbc->block_size)))->next_ptr;
-
-		int inode_pos, dir_pos;
-		for (int i = 0; i < sbc->num_blocks; i++)
+		if (inodes[i].valid == -1)
 		{
-			if (inodes[i].valid == -1)
-			{
-				inodes[i].valid = 1;
-				inode_pos = i;
-				break;
-			}
+			inodes[i].valid = 1;
+			inodes[i].type = 1;
+			inode_pos = i;
+			break;
 		}
+	}
 
-		int dir_found_flag = 0;
+	int dir_found_flag = 0;
 
-		for (int i = 0; i < block_size / 16; i++)
+	for (int i = 0; i < block_size / 16; i++)
+	{
+		if (dir_here[i].i_no == -1)
 		{
-			if (dir_here[i].i_no == -1)
-			{
-				dir_pos = i;
-				dir_found_flag = 1;
-				break;
-			}
+			dir_pos = i;
+			dir_found_flag = 1;
+			break;
 		}
+	}
 
-		if (dir_found_flag)
-		{
-			strcpy(dir_here[dir_pos].filename, file_name);
-			dir_here[dir_pos].i_no = inode_pos;
-			return add_to_fdt(inode_pos);
-		}
-		else
-		{
-			fprintf(stderr, "Disk is full 1\n");
-			return -1;			
-		}
+	if (dir_found_flag)
+	{
+		strcpy(dir_here[dir_pos].filename, file_name);
+		dir_here[dir_pos].i_no = inode_pos;
+		return add_to_fdt(inode_pos);
 	}
 	else
 	{
-		fprintf(stderr, "Disk is full 2\n");
-		return -1;
+		fprintf(stderr, "Disk is full 1\n");
+		return -1;			
 	}
 }
 
@@ -508,6 +497,92 @@ int my_copy(char *system_file, char *file_here)
 	// 	return -1;
 }
 
+int my_mkdir(char *dir_name)
+{
+	int block_size = sbc->block_size;
+
+	int i;
+	dir_entry* dir_here = (dir_entry*) (blocks + curr_dir * block_size);
+	for (i = 0; i < block_size / 16; i++)
+	{
+		if (strcmp(dir_here[i].filename, dir_name) == 0 && dir_here[i].i_no != -1 && inodes[dir_here[i].i_no].type == 2)
+			return 1;
+	}
+
+	int num_blocks = sbc->num_blocks;
+	int free_pos = sbc->free_ptr;
+	if (free_pos)
+	{
+		void* block_here = (blocks + (free_pos * sbc->block_size));
+		sbc->free_ptr = ((free_block*) (blocks + (free_pos * sbc->block_size)))->next_ptr;
+
+		int inode_pos, dir_pos;
+		for (int i = 0; i < sbc->num_blocks; i++)
+		{
+			if (inodes[i].valid == -1)
+			{
+				inodes[i].valid = 1;
+				inode_pos = i;
+				break;
+			}
+		}
+
+		int dir_found_flag = 0;
+
+		for (int i = 0; i < block_size / 16; i++)
+		{
+			if (dir_here[i].i_no == -1)
+			{
+				dir_pos = i;
+				dir_found_flag = 1;
+				break;
+			}
+		}
+
+		if (dir_found_flag)
+		{
+			strcpy(dir_here[dir_pos].filename, dir_name);
+			dir_here[dir_pos].i_no = inode_pos;
+			inodes[inode_pos].type = 2;
+			inodes[inode_pos].directly[0] = free_pos;
+			dir_entry* dir_new = (dir_entry *) (blocks + free_pos * sbc->block_size);
+			strcpy(dir_new[0].filename, ".");
+			strcpy(dir_new[1].filename, "..");
+			dir_new[0].i_no = inode_pos;
+			dir_new[1].i_no = curr_dir_inode;
+			return 1;
+		}
+		else
+		{
+			fprintf(stderr, "Disk full\n");
+		}
+	}
+	else
+	{
+		fprintf(stderr, "Disk full\n");
+	}
+
+}
+
+int my_chdir(char *dir_name)
+{
+	int block_size = sbc->block_size;
+
+	int i, found = 0;
+	dir_entry* dir_here = (dir_entry*) (blocks + curr_dir * block_size);
+	for (i = 0; i < block_size / 16; i++)
+	{
+		if (strcmp(dir_here[i].filename, dir_name) == 0 && dir_here[i].i_no != -1 && inodes[dir_here[i].i_no].type == 2)
+		{
+			curr_dir = inodes[dir_here[i].i_no].directly[0];
+			curr_dir_inode = dir_here[i].i_no;
+			return 1;
+		}
+	}
+	fprintf(stderr, "Directory not found\n");
+	return -1;
+}
+
 int main()
 {
 	int sys_size, block_size;
@@ -565,6 +640,14 @@ int main()
 	int file = my_open("hello");
 	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
 	my_cat(file);
+
+	my_mkdir("test");
+	printf("%d\n", curr_dir);
+	my_chdir("test");
+	printf("%d\n", curr_dir);
+	my_chdir("..");
+	printf("%d\n", curr_dir);
+	my_chdir("test1");
 
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
