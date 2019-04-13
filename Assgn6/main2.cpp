@@ -360,8 +360,78 @@ int my_close(int file)		// Closes the descriptor to a file
 }
 
 
-int my_cat(char *str)
+int my_cat(int file)
 {
+	file = index_from_fdt(file);
+	inode i_here = inodes[file];
+	int count_text = 0;
+
+	
+	for (int i = 0; i < 5; i++)
+	{
+		int block_here_index = i_here.directly[i];
+		char* block_here = (char*) (blocks + block_here_index * sbc->block_size);
+		int len_here = strlen(block_here);
+		if (len_here >= sbc->block_size)
+		{
+			char buf_here[sbc->block_size + 1];
+			memcpy(buf_here, block_here, sbc->block_size);
+			buf_here[sbc->block_size] = '\0';
+			printf("%s", buf_here);
+		}
+		else
+		{
+			printf("%s\n", block_here);
+			break;
+		}
+	}
+/*
+	if (length <= 0)
+		return count_text;
+
+	int free_block_index = sbc->free_ptr;
+	sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+
+	void* block_single = (blocks + free_block_index * sbc->block_size);
+	inodes[file].singly = free_block_index;
+	inode* inode_at_single = (inode*) block_single;
+
+	for (int i = 0; i < (sbc->block_size) / sizeof(inode); i++)
+		inode_at_single[i].valid = -1;
+
+	int fin = 0;
+	for (int j = 0; j < (sbc->block_size) / sizeof(inode); j++)
+	{
+		if (fin)
+			break;
+		if (inode_at_single[j].valid == -1)
+		{
+			inode_at_single[j].valid == 1;
+			for (int i = 0; i < 5; i++)
+			{
+				if (length <= 0)
+				{
+					fin = 1;
+					break;
+				}
+				int free_block_index = sbc->free_ptr;
+				sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+				int len_here = sbc->block_size;
+				if (length < sbc->block_size)
+					len_here = length;
+				char* block_here = (char*) (blocks + free_block_index * sbc->block_size);
+				memcpy(block_here, text + count_text, len_here);
+				count_text+=len_here;
+				length-=len_here;
+				inode_at_single[j].directly[i] = free_block_index;
+			}
+		}
+
+	}
+
+	if (length <= 0)
+		return count_text;
+*/
 	// int num_files = sbc->num_files;
 	// int i, found = 0;
 	// for (i = 0; i < num_files; i++)
@@ -507,7 +577,7 @@ int main()
 
 	int file = my_open("hello");
 	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
-	// my_cat("hello");
+	my_cat(file);
 
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
