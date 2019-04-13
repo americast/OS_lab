@@ -113,6 +113,7 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 
 int my_erase(int file)				// Erases file contents, but not the file
 {
+	file = index_from_fdt(file);
 	if (used[file] == 0)
 		return -1;
 	int file_org = file;
@@ -146,7 +147,7 @@ int my_write(int file, char *text, int length, char mode)		// Writes to a file
 	if (mode == 'w')
 	{
 		w_seek = 0;
-		my_erase(file);
+		my_erase(org_file);
 	}
 	else if (mode == 'a')
 	{
@@ -396,7 +397,7 @@ int main()
 	my_write(file, "test1", 5, 'w');
 	my_cat("hello");
 
-	my_write(file, " test 2 test3", 8, 'a');
+	my_write(file, " test 2 test3", 9, 'a');
 	my_cat("hello");
 
 	int file2 = my_copy("test", "test2");

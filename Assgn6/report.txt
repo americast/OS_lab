@@ -33,7 +33,14 @@ void my_read(char *text, int file, int len)
 // copies len no of characters from file to text char buffer updating the seek.
 
 int my_write(int file, char *text, int len, char mode)
-// write len no of characters from text to file and returns the no of characters written. Mode ‘w’ overwrites the file, and mode ‘a’ appends to the file.
+// write len no of characters from text to file and returns the no of characters written. Mode ‘w’ overwrites the file, and mode ‘a’ appends to the file, mode ‘s’ uses the writing seek to write at a specified position.
+
+void set_seekw(int file, int pos);
+void set_seekr(int file, int pos);
+// Set the writing or reading seek of the given file
+
+int my_erase(int file);
+// Erases the contents of a file, but not the file itself. Returns 1 upon success and -1 upon error.
 
 int my_copy(char *system_file, char *file_here)
 
