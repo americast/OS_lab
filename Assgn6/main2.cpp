@@ -141,23 +141,6 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 	}
 }
 
-int my_erase(int file)				// Erases file contents, but not the file
-{
-	// file = index_from_fdt(file);
-	// if (used[file] == 0)
-	// 	return -1;
-	// int file_org = file;
-	// while(1)
-	// {
-	// 	strcpy(other_blocks + (file * sbc->block_size), "\0");
-	// 	if (fat[file] == -1)
-	// 		break;
-	// 	file = fat[file];
-	// 	used[file] = 0;
-	// }
-	// fat[file_org] = -1;
-	// return 1;
-}
 
 // void set_seekw(int file, int val)
 // {
@@ -583,6 +566,80 @@ int my_chdir(char *dir_name)
 	return -1;
 }
 
+void add_to_free(int block_num)
+{
+	int curr_free = sbc->free_ptr;
+	void* block_here = (blocks + block_num * sbc->block_size);
+	memset(block_here, 0, sbc->block_size);
+	free_block* free_block_here = (free_block *) block_here;
+	free_block_here->next_ptr = curr_free;
+	sbc->free_ptr = block_num;
+}
+
+int my_erase(int inode_num)				// Erases file contents, but not the file
+{
+	inode inode_here = inodes[inode_num];
+	// directly
+	for (int i = 0; i < 5; i++)
+		if (inode_here.directly[i] != -1)
+		{
+			add_to_free(inode_here.directly[i]);
+			inode_here.directly[i] = -1;
+		}
+
+	int singly_pos = inode_here.singly;
+
+	inode* inodes_there = (inode *)(blocks + singly_pos * sbc->block_size);
+
+	for (int j = 0; j < sbc->num_blocks; j++)
+	{
+		if (inodes_there[j].valid == -1)
+			break;
+		for (int i = 0; i < 5; i++)
+			if (inodes_there[j].directly[i] != -1)
+			{
+				add_to_free(inodes_there[j].directly[i]);
+				inodes_there[j].directly[i] = -1;
+			}
+		inodes_there[j].valid = -1;
+	}
+
+	// file = index_from_fdt(file);
+	// if (used[file] == 0)
+	// 	return -1;
+	// int file_org = file;
+	// while(1)
+	// {
+	// 	strcpy(other_blocks + (file * sbc->block_size), "\0");
+	// 	if (fat[file] == -1)
+	// 		break;
+	// 	file = fat[file];
+	// 	used[file] = 0;
+	// }
+	// fat[file_org] = -1;
+	return 1;
+}
+
+int my_rmdir(char *dir_name)
+{
+	int block_size = sbc->block_size;
+
+	int i, found = 0;
+	dir_entry* dir_here = (dir_entry*) (blocks + curr_dir * block_size);
+	for (i = 0; i < block_size / 16; i++)
+	{
+		if (strcmp(dir_here[i].filename, dir_name) == 0 && dir_here[i].i_no != -1 && inodes[dir_here[i].i_no].type == 2)
+		{
+			int block_num = inodes[dir_here[i].i_no].directly[0];
+			dir_entry* dir_here = (dir_entry *) (blocks + block_num * sbc->block_size);
+			for (int i = 0; i < sbc->block_size / sizeof(dir_entry); i++)
+				my_erase(dir_here[i].i_no);
+			add_to_free(block_num);
+			return 1;
+		}
+	}
+}
+
 int main()
 {
 	int sys_size, block_size;
@@ -647,7 +704,8 @@ int main()
 	printf("%d\n", curr_dir);
 	my_chdir("..");
 	printf("%d\n", curr_dir);
-	my_chdir("test1");
+	my_rmdir("test");
+	my_chdir("test");
 
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
