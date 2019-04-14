@@ -142,45 +142,99 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 }
 
 
-// void set_seekw(int file, int val)
-// {
-// 	fdt[file].w_seek = val;
-// }
+void set_seekw(int file, int val)
+{
+	fdt[file].w_seek = val;
+}
 
-// void set_seekr(int file, int val)
-// {
-// 	fdt[file].seek = val;
-// }
+void set_seekr(int file, int val)
+{
+	fdt[file].r_seek = val;
+}
 
 int my_write(int file, char *text_here, int length, char mode)		// Writes to a file
 {
+	int org_file = file;
+	int seek = fdt[org_file].w_seek;
+	// cout<<"seek: "<<seek<<endl;
 	file = index_from_fdt(file);
 	inode i_here = inodes[file];
+
+	if (mode == 'w')
+	{
+		seek = 0;
+		fdt[org_file].w_seek = 0;
+		// Deleting is left
+	}
+	if (mode == 'a')
+	{
+		seek = i_here.size + 1;
+		fdt[org_file].w_seek = i_here.size + 1;
+	}
+
 	int count_text = 0;
 
 	char text[length + 1];
 	strcpy(text, text_here);
-	strcat(text, "\0");
-	length++;
 
-	for (int i = 0; i < 5; i++)
+	if (mode == 'w' || mode == 'a')
 	{
-		if (length <= 0)
-			break;
-		int free_block_index = sbc->free_ptr;
-		sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
-		int len_here = sbc->block_size;
-		if (length < sbc->block_size)
-			len_here = length;
-		char* block_here = (char*) (blocks + free_block_index * sbc->block_size);
-		memcpy(block_here, text + count_text, len_here);
-		count_text+=len_here;
-		length-=len_here;
-		inodes[file].directly[i] = free_block_index;
+		strcat(text, "\0");
+		length++;		
 	}
 
-	if (length <= 0)
-		return count_text;
+
+	int num_direct = 0, num_left = 0;
+	if (seek)
+	{
+		num_direct = seek / sbc->block_size;
+		num_left = seek % sbc->block_size;
+		// cout<<"Seek "<<seek<<endl;
+	}
+
+	// cout<<"Num direct here: "<<num_direct<<endl;
+
+	if (num_direct <= 4)
+	{
+		for (int i = num_direct; i < 5; i++)
+		{
+			if (length <= 0)
+				break;
+			int free_block_index;
+			if (!num_left)
+			{
+				free_block_index = sbc->free_ptr;
+				sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;				
+			}
+			int len_here = sbc->block_size;
+			if (length < sbc->block_size)
+				len_here = length;
+			else
+				len_here -= num_left;
+			// if (num_left)
+			// 	len_here-=num_left;
+			char *block_here;
+			if (!num_left)
+				block_here = (char*) (blocks + free_block_index * sbc->block_size);
+			else
+				block_here = (char*) (blocks + inodes[file].directly[i] * sbc->block_size);
+
+			printf("num_left: %d\n", num_left);
+			memcpy(block_here + num_left, text + count_text, len_here);
+			count_text+=len_here;
+			length-=len_here;
+			fdt[org_file].w_seek+=len_here;
+			if (!num_left)
+				inodes[file].directly[i] = free_block_index;
+			num_left = 0;
+		}
+
+		if (length <= 0)
+		{
+			inodes[file].size = fdt[org_file].w_seek;
+			return count_text;
+		}	
+	}
 
 	int free_block_index = sbc->free_ptr;
 	sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
@@ -223,9 +277,10 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 	}
 
 	if (length <= 0)
+	{
+		inodes[file].size = fdt[org_file].w_seek;
 		return count_text;
-
-
+	}
 
 
 	// int org_file = file;
@@ -854,6 +909,13 @@ int main()
 
 	my_read(file, text, 3);
 	printf("Second read: %s\n", text);
+
+	my_write(file, "hello", 5, 'w');
+	my_cat(file);
+
+	set_seekw(file, 2);
+	my_write(file, "a", 1, 's');
+	my_cat(file);
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
 
