@@ -425,8 +425,121 @@ void my_cat(int file)
 	// }
 }
 
-void my_read(char *text, int file, int len)
+void my_read(int file, char *text, int len)
 {
+	memset(text, 0, len + 1);
+	file = index_from_fdt(file);
+	inode i_here = inodes[file];
+	int count_text = 0;
+
+	
+	for (int i = 0; i < 5; i++)
+	{
+		int block_here_index = i_here.directly[i];
+		char* block_here = (char*) (blocks + block_here_index * sbc->block_size);
+		int len_here = strlen(block_here);
+		if (len_here >= sbc->block_size)
+		{
+			len_here = sbc->block_size;
+			for (int i = 0; i < len_here; i++)
+			{
+				memcpy(text + count_text, block_here + i, 1);
+				count_text++;
+				if (count_text >=len)
+					return;
+			}
+		}
+		else
+		{
+			len_here++;
+			for (int i = 0; i < len_here; i++)
+			{
+				memcpy(text + count_text, block_here + i, 1);
+				count_text++;
+				if (count_text >=len)
+					return;
+			}
+			return;
+		}
+	}
+
+
+	int single_block_here_index = inodes[file].singly;
+	inode* inode_at_single = (inode*) (blocks + single_block_here_index * sbc->block_size);
+
+	for (int j = 0; j < (sbc->block_size) / sizeof(inode); j++)
+	{
+		if (inode_at_single[j].valid == -1)
+			return;
+		else
+		{
+			inode_at_single[j].valid == 1;
+			for (int i = 0; i < 5; i++)
+			{
+				int block_here_index = inode_at_single[j].directly[i];
+				char* block_here = (char*) (blocks + block_here_index * sbc->block_size);
+				int len_here = strlen(block_here);
+				if (len_here >= sbc->block_size)
+				{
+					len_here = sbc->block_size;
+					for (int i = 0; i < len_here; i++)
+					{
+						memcpy(text + count_text, block_here + i, 1);
+						count_text++;
+						if (count_text >=len)
+							return;
+					}
+				}
+				else
+				{
+					len_here++;
+					for (int i = 0; i < len_here; i++)
+					{
+						memcpy(text + count_text, block_here + i, 1);
+						count_text++;
+						if (count_text >=len)
+							return;
+					}
+					return;
+				}
+			}
+		}
+
+	}
+
+
+	// int num_files = sbc->num_files;
+	// int i, found = 0;
+	// for (i = 0; i < num_files; i++)
+	// {
+	// 	// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
+	// 	if (strcmp(filename_map[i].filename, str) == 0)
+	// 	{
+	// 		// cout<<"Found :D\n";
+	// 		found = 1;
+	// 		break;
+	// 	}
+	// }
+
+	// if (!found)
+	// {
+	// 	fprintf(stderr, "File not found\n");
+	// 	return -1;
+	// }
+
+	// int index = filename_map[i].index;
+	// while(1)
+	// {
+	// 	char *now = other_blocks + sbc->block_size * index;
+	// 	cout<<now;
+	// 	if (fat[index] != -1)
+	// 		index = fat[index];
+	// 	else
+	// 	{
+	// 		cout<<endl;
+	// 		return 0;
+	// 	}
+	// }
 	// // int num_files = sbc->num_files;
 	// int fdt_file = file;
 	// file = index_from_fdt(file);
@@ -704,9 +817,16 @@ int main()
 	printf("%d\n", curr_dir);
 	my_chdir("..");
 	printf("%d\n", curr_dir);
-	my_rmdir("test");
-	my_chdir("test");
+	// my_rmdir("test");
+	// my_chdir("test");
+	// my_chdir("..");
 
+	char text[100];
+	my_read(file, text, 3);
+	printf("From read: %s\n", text);
+
+	// my_read(file, text, 3);
+	// printf("%s\n", text);
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
 
