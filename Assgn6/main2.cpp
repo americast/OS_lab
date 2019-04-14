@@ -223,10 +223,12 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 	{
 		my_erase(file);
 		seek = 0;
+		fdt[org_file].w_seek = 0;
 	}
 	if (mode == 'a')
 	{
 		seek = inodes[file].size;
+		fdt[org_file].w_seek = seek;
 	}
 	int count_text = 0;
 	int seek_here = 0;
@@ -271,6 +273,7 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 				memcpy(block_here + i, text + count_text, 1);
 				length--;
 				count_text++;
+				fdt[org_file].w_seek++;
 			}
 			else
 				seek--;
@@ -278,7 +281,13 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 	}
 
 	if (length <= 0)
+	{
+		if (mode == 'w' || mode == 'a')
+			inodes[file].size = fdt[org_file].w_seek - 1;
+		else
+			inodes[file].size = fdt[org_file].w_seek;
 		return count_text;
+	}
 
 	int free_block_index = sbc->free_ptr;
 	sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
@@ -306,22 +315,46 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 					break;
 				}
 				int free_block_index = sbc->free_ptr;
-				sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+				if (seek == 0)
+					sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
 				int len_here = sbc->block_size;
 				if (length < sbc->block_size)
 					len_here = length;
-				char* block_here = (char*) (blocks + free_block_index * sbc->block_size);
-				memcpy(block_here, text + count_text, len_here);
-				count_text+=len_here;
-				length-=len_here;
-				inode_at_single[j].directly[i] = free_block_index;
+				char *block_here;
+				if (seek > 0)
+					block_here = (char*) (blocks + inode_at_single[j].directly[i] * sbc->block_size);
+				else
+					block_here = (char*) (blocks + free_block_index * sbc->block_size);
+				if (seek == 0)
+					inode_at_single[j].directly[i] = free_block_index;
+				for (int i = 0; i < len_here; i++)
+				{
+					// cout<<"Seek here in: "<<seek<<endl;
+					if (seek <= 0)
+					{
+						// cout<<"i : "<<i<<endl;
+						// cout<<"char here: "<<*(text + count_text + i)<<endl;
+						memcpy(block_here + i, text + count_text, 1);
+						length--;
+						count_text++;
+						fdt[org_file].w_seek++;
+					}
+					else
+						seek--;
+				}
 			}
 		}
 
 	}
 
 	if (length <= 0)
+	{
+		if (mode == 'w' || mode == 'a')
+			inodes[file].size = fdt[org_file].w_seek - 1;
+		else
+			inodes[file].size = fdt[org_file].w_seek;
 		return count_text;
+	}
 	// int org_file = file;
 	// int w_seek = fdt[org_file].w_seek;
 	// file = index_from_fdt(file);
@@ -905,6 +938,8 @@ int main()
 
 	set_seekw(file, 2);
 	my_write(file, "a", 1, 's');
+	my_cat(file);
+	my_write(file, "ab", 2, 'a');
 	my_cat(file);
 	my_cat(file2);
 	// my_write(file, "test1", 5, 'w');
