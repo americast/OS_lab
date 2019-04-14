@@ -376,16 +376,16 @@ int my_write(int file, char *text_here, int length)		// Writes to a file
 
 int my_close(int file)		// Closes the descriptor to a file
 {
-	// if (fdt[file].use)
-	// {
-	// 	fdt[file].use = 0;
-	// 	return 1;
-	// }
-	// else
-	// {
-	// 	fprintf(stderr, "File already closed\n");
-	// 	return -1;
-	// }
+	if (fdt[file].use)
+	{
+		fdt[file].use = 0;
+		return 1;
+	}
+	else
+	{
+		fprintf(stderr, "File already closed\n");
+		return -1;
+	}
 }
 
 
@@ -658,23 +658,23 @@ void my_read(int file, char *text, int len)
 
 int my_copy(char *system_file, char *file_here)
 {
-	// int file = my_open(file_here);
-	// FILE *s_file;
-	// s_file = fopen(system_file,"rb");
-	// fseek(s_file,0,SEEK_END);
-	// int size = ftell(s_file);
-	// // cout<<"size is: "<<size<<endl;
-	// char txt_here[size];
-	// fseek(s_file, 0, SEEK_SET);
-	// fread(txt_here, size, 1, s_file);
-	// txt_here[size - 1] = '\0';
-	// // cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
-	// fclose(s_file);
-	// int n = my_write(file, txt_here, size, 'w');
-	// if (n >= 0)
-	// 	return file;
-	// else
-	// 	return -1;
+	int file = my_open(file_here);
+	FILE *s_file;
+	s_file = fopen(system_file,"rb");
+	fseek(s_file,0,SEEK_END);
+	int size = ftell(s_file);
+	// cout<<"size is: "<<size<<endl;
+	char txt_here[size];
+	fseek(s_file, 0, SEEK_SET);
+	fread(txt_here, size, 1, s_file);
+	txt_here[size - 1] = '\0';
+	// cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
+	fclose(s_file);
+	int n = my_write(file, txt_here, size);
+	if (n >= 0)
+		return file;
+	else
+		return -1;
 }
 
 int my_mkdir(char *dir_name)
@@ -860,6 +860,9 @@ int main()
 
 	my_write(file, "hello", 5);
 	my_cat(file);
+
+	int file2 = my_copy("test", "test_here");
+	my_cat(file2);
 
 	// set_seekw(file, 2);
 	// my_write(file, "a", 1, 's');
