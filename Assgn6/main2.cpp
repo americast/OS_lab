@@ -17,7 +17,7 @@ using namespace std;
 struct FDT
 {
 	int index;
-	int seek;
+	int r_seek;
 	int w_seek;
 	int use;
 };
@@ -72,7 +72,7 @@ int add_to_fdt(int index)
 		if (fdt[i].use == 0)
 		{
 			fdt[i].use = 1;
-			fdt[i].seek = 0;
+			fdt[i].r_seek = 0;
 			fdt[i].w_seek = 0;
 			fdt[i].index = index;
 			return i;
@@ -427,10 +427,13 @@ void my_cat(int file)
 
 void my_read(int file, char *text, int len)
 {
+	int org_file = file;
+	int seek = fdt[org_file].r_seek;
 	memset(text, 0, len + 1);
 	file = index_from_fdt(file);
 	inode i_here = inodes[file];
 	int count_text = 0;
+	int count_before_seek = 0;
 
 	
 	for (int i = 0; i < 5; i++)
@@ -443,8 +446,14 @@ void my_read(int file, char *text, int len)
 			len_here = sbc->block_size;
 			for (int i = 0; i < len_here; i++)
 			{
-				memcpy(text + count_text, block_here + i, 1);
-				count_text++;
+				if (count_before_seek >= seek)
+				{
+					memcpy(text + count_text, block_here + i, 1);
+					count_text++;
+					fdt[org_file].r_seek++;
+				}
+				else
+					count_before_seek++;
 				if (count_text >=len)
 					return;
 			}
@@ -454,8 +463,14 @@ void my_read(int file, char *text, int len)
 			len_here++;
 			for (int i = 0; i < len_here; i++)
 			{
-				memcpy(text + count_text, block_here + i, 1);
-				count_text++;
+				if (count_before_seek >= seek)
+				{
+					memcpy(text + count_text, block_here + i, 1);
+					count_text++;
+					fdt[org_file].r_seek++;
+				}
+				else
+					count_before_seek++;
 				if (count_text >=len)
 					return;
 			}
@@ -484,8 +499,14 @@ void my_read(int file, char *text, int len)
 					len_here = sbc->block_size;
 					for (int i = 0; i < len_here; i++)
 					{
-						memcpy(text + count_text, block_here + i, 1);
-						count_text++;
+						if (count_before_seek >= seek)
+						{
+							memcpy(text + count_text, block_here + i, 1);
+							count_text++;
+							fdt[org_file].r_seek++;
+						}
+						else
+							count_before_seek++;
 						if (count_text >=len)
 							return;
 					}
@@ -495,8 +516,14 @@ void my_read(int file, char *text, int len)
 					len_here++;
 					for (int i = 0; i < len_here; i++)
 					{
-						memcpy(text + count_text, block_here + i, 1);
-						count_text++;
+						if (count_before_seek >= seek)
+						{
+							memcpy(text + count_text, block_here + i, 1);
+							count_text++;
+							fdt[org_file].r_seek++;
+						}
+						else
+							count_before_seek++;
 						if (count_text >=len)
 							return;
 					}
@@ -825,8 +852,8 @@ int main()
 	my_read(file, text, 3);
 	printf("From read: %s\n", text);
 
-	// my_read(file, text, 3);
-	// printf("%s\n", text);
+	my_read(file, text, 3);
+	printf("Second read: %s\n", text);
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
 
