@@ -212,32 +212,69 @@ int my_erase(int inode_num)				// Erases file contents, but not the file
 	return 1;
 }
 
-int my_write(int file, char *text_here, int length)		// Writes to a file
+int my_write(int file, char *text_here, int length, char mode)		// Writes to a file
 {
+	int org_file = file;
 	file = index_from_fdt(file);
 	inode i_here = inodes[file];
-	my_erase(file);
-	int count_text = 0;
+	int	seek = fdt[org_file].w_seek;
 
+	if (mode == 'w')
+	{
+		my_erase(file);
+		seek = 0;
+	}
+	if (mode == 'a')
+	{
+		seek = inodes[file].size;
+	}
+	int count_text = 0;
+	int seek_here = 0;
 	char text[length + 1];
 	strcpy(text, text_here);
-	strcat(text, "\0");
-	length++;
+
+	if (mode == 'w' || mode == 'a')
+	{
+		strcat(text, "\0");
+		length++;
+	}
+
+	length+=seek;
+
+	// cout<<"text: "<<text<<endl;
 
 	for (int i = 0; i < 5; i++)
 	{
+		// cout<<"Seek here: "<<seek<<endl;
 		if (length <= 0)
 			break;
 		int free_block_index = sbc->free_ptr;
-		sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+		if (seek == 0)
+			sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
 		int len_here = sbc->block_size;
 		if (length < sbc->block_size)
 			len_here = length;
-		char* block_here = (char*) (blocks + free_block_index * sbc->block_size);
-		memcpy(block_here, text + count_text, len_here);
-		count_text+=len_here;
-		length-=len_here;
-		inodes[file].directly[i] = free_block_index;
+		char *block_here;
+		if (seek > 0)
+			block_here = (char*) (blocks + inodes[file].directly[i] * sbc->block_size);
+		else
+			block_here = (char*) (blocks + free_block_index * sbc->block_size);
+		if (seek == 0)
+			inodes[file].directly[i] = free_block_index;
+		for (int i = 0; i < len_here; i++)
+		{
+			// cout<<"Seek here in: "<<seek<<endl;
+			if (seek <= 0)
+			{
+				// cout<<"i : "<<i<<endl;
+				// cout<<"char here: "<<*(text + count_text + i)<<endl;
+				memcpy(block_here + i, text + count_text, 1);
+				length--;
+				count_text++;
+			}
+			else
+				seek--;
+		}
 	}
 
 	if (length <= 0)
@@ -670,7 +707,7 @@ int my_copy(char *system_file, char *file_here)
 	txt_here[size - 1] = '\0';
 	// cout<<"txt here is: "<<txt_here<<"\nDone."<<endl;
 	fclose(s_file);
-	int n = my_write(file, txt_here, size);
+	int n = my_write(file, txt_here, size, 'w');
 	if (n >= 0)
 		return file;
 	else
@@ -838,7 +875,7 @@ int main()
 	// API testing
 
 	int file = my_open("hello");
-	my_write(file, "the quick brown fox jumps over the lazy dog", 43);
+	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
 	my_cat(file);
 
 	my_mkdir("test");
@@ -858,18 +895,18 @@ int main()
 	my_read(file, text, 3);
 	printf("Second read: %s\n", text);
 
-	my_write(file, "hello", 5);
+	my_write(file, "hello", 5, 'w');
 	my_cat(file);
 
 	int file2 = my_copy("test", "test_here");
 	my_cat(file2);
 
 	my_close(file2);
-	my_cat(file2);
 
-	// set_seekw(file, 2);
-	// my_write(file, "a", 1, 's');
-	// my_cat(file);
+	set_seekw(file, 2);
+	my_write(file, "a", 1, 's');
+	my_cat(file);
+	my_cat(file2);
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
 
