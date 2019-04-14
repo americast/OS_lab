@@ -111,6 +111,9 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 		{
 			inodes[i].valid = 1;
 			inodes[i].type = 1;
+			inodes[i].singly = -1;
+			for (int j = 0; j < 5; j++)
+				inodes[i].directly[j] = -1;
 			inode_pos = i;
 			break;
 		}
@@ -152,89 +155,93 @@ void set_seekr(int file, int val)
 	fdt[file].r_seek = val;
 }
 
-int my_write(int file, char *text_here, int length, char mode)		// Writes to a file
+void add_to_free(int block_num)
 {
-	int org_file = file;
-	int seek = fdt[org_file].w_seek;
-	// cout<<"seek: "<<seek<<endl;
+	int curr_free = sbc->free_ptr;
+	void* block_here = (blocks + block_num * sbc->block_size);
+	memset(block_here, 0, sbc->block_size);
+	free_block* free_block_here = (free_block *) block_here;
+	free_block_here->next_ptr = curr_free;
+	sbc->free_ptr = block_num;
+}
+
+int my_erase(int inode_num)				// Erases file contents, but not the file
+{
+	inode inode_here = inodes[inode_num];
+	// directly
+	for (int i = 0; i < 5; i++)
+		if (inode_here.directly[i] != -1)
+		{
+			add_to_free(inode_here.directly[i]);
+			inode_here.directly[i] = -1;
+		}
+
+	int singly_pos = inode_here.singly;
+	// cout<<"Singly: "<<singly_pos<<endl;
+	if (singly_pos < 0)
+		return 1;
+
+	inode* inodes_there = (inode *)(blocks + singly_pos * sbc->block_size);
+
+	for (int j = 0; j < sbc->num_blocks; j++)
+	{
+		if (inodes_there[j].valid == -1)
+			break;
+		for (int i = 0; i < 5; i++)
+			if (inodes_there[j].directly[i] != -1)
+			{
+				add_to_free(inodes_there[j].directly[i]);
+				inodes_there[j].directly[i] = -1;
+			}
+		inodes_there[j].valid = -1;
+	}
+
+	// file = index_from_fdt(file);
+	// if (used[file] == 0)
+	// 	return -1;
+	// int file_org = file;
+	// while(1)
+	// {
+	// 	strcpy(other_blocks + (file * sbc->block_size), "\0");
+	// 	if (fat[file] == -1)
+	// 		break;
+	// 	file = fat[file];
+	// 	used[file] = 0;
+	// }
+	// fat[file_org] = -1;
+	return 1;
+}
+
+int my_write(int file, char *text_here, int length)		// Writes to a file
+{
 	file = index_from_fdt(file);
 	inode i_here = inodes[file];
-
-	if (mode == 'w')
-	{
-		seek = 0;
-		fdt[org_file].w_seek = 0;
-		// Deleting is left
-	}
-	if (mode == 'a')
-	{
-		seek = i_here.size + 1;
-		fdt[org_file].w_seek = i_here.size + 1;
-	}
-
+	my_erase(file);
 	int count_text = 0;
 
 	char text[length + 1];
 	strcpy(text, text_here);
+	strcat(text, "\0");
+	length++;
 
-	if (mode == 'w' || mode == 'a')
+	for (int i = 0; i < 5; i++)
 	{
-		strcat(text, "\0");
-		length++;		
-	}
-
-
-	int num_direct = 0, num_left = 0;
-	if (seek)
-	{
-		num_direct = seek / sbc->block_size;
-		num_left = seek % sbc->block_size;
-		// cout<<"Seek "<<seek<<endl;
-	}
-
-	// cout<<"Num direct here: "<<num_direct<<endl;
-
-	if (num_direct <= 4)
-	{
-		for (int i = num_direct; i < 5; i++)
-		{
-			if (length <= 0)
-				break;
-			int free_block_index;
-			if (!num_left)
-			{
-				free_block_index = sbc->free_ptr;
-				sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;				
-			}
-			int len_here = sbc->block_size;
-			if (length < sbc->block_size)
-				len_here = length;
-			else
-				len_here -= num_left;
-			// if (num_left)
-			// 	len_here-=num_left;
-			char *block_here;
-			if (!num_left)
-				block_here = (char*) (blocks + free_block_index * sbc->block_size);
-			else
-				block_here = (char*) (blocks + inodes[file].directly[i] * sbc->block_size);
-
-			printf("num_left: %d\n", num_left);
-			memcpy(block_here + num_left, text + count_text, len_here);
-			count_text+=len_here;
-			length-=len_here;
-			fdt[org_file].w_seek+=len_here;
-			if (!num_left)
-				inodes[file].directly[i] = free_block_index;
-			num_left = 0;
-		}
-
 		if (length <= 0)
-		{
-			inodes[file].size = fdt[org_file].w_seek;
-			return count_text;
-		}	
+			break;
+		int free_block_index = sbc->free_ptr;
+		sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+		int len_here = sbc->block_size;
+		if (length < sbc->block_size)
+			len_here = length;
+		char* block_here = (char*) (blocks + free_block_index * sbc->block_size);
+		memcpy(block_here, text + count_text, len_here);
+		count_text+=len_here;
+		length-=len_here;
+		inodes[file].directly[i] = free_block_index;
 	}
+
+	if (length <= 0)
+		return count_text;
 
 	int free_block_index = sbc->free_ptr;
 	sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
@@ -277,12 +284,7 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 	}
 
 	if (length <= 0)
-	{
-		inodes[file].size = fdt[org_file].w_seek;
 		return count_text;
-	}
-
-
 	// int org_file = file;
 	// int w_seek = fdt[org_file].w_seek;
 	// file = index_from_fdt(file);
@@ -761,60 +763,6 @@ int my_chdir(char *dir_name)
 	return -1;
 }
 
-void add_to_free(int block_num)
-{
-	int curr_free = sbc->free_ptr;
-	void* block_here = (blocks + block_num * sbc->block_size);
-	memset(block_here, 0, sbc->block_size);
-	free_block* free_block_here = (free_block *) block_here;
-	free_block_here->next_ptr = curr_free;
-	sbc->free_ptr = block_num;
-}
-
-int my_erase(int inode_num)				// Erases file contents, but not the file
-{
-	inode inode_here = inodes[inode_num];
-	// directly
-	for (int i = 0; i < 5; i++)
-		if (inode_here.directly[i] != -1)
-		{
-			add_to_free(inode_here.directly[i]);
-			inode_here.directly[i] = -1;
-		}
-
-	int singly_pos = inode_here.singly;
-
-	inode* inodes_there = (inode *)(blocks + singly_pos * sbc->block_size);
-
-	for (int j = 0; j < sbc->num_blocks; j++)
-	{
-		if (inodes_there[j].valid == -1)
-			break;
-		for (int i = 0; i < 5; i++)
-			if (inodes_there[j].directly[i] != -1)
-			{
-				add_to_free(inodes_there[j].directly[i]);
-				inodes_there[j].directly[i] = -1;
-			}
-		inodes_there[j].valid = -1;
-	}
-
-	// file = index_from_fdt(file);
-	// if (used[file] == 0)
-	// 	return -1;
-	// int file_org = file;
-	// while(1)
-	// {
-	// 	strcpy(other_blocks + (file * sbc->block_size), "\0");
-	// 	if (fat[file] == -1)
-	// 		break;
-	// 	file = fat[file];
-	// 	used[file] = 0;
-	// }
-	// fat[file_org] = -1;
-	return 1;
-}
-
 int my_rmdir(char *dir_name)
 {
 	int block_size = sbc->block_size;
@@ -890,7 +838,7 @@ int main()
 	// API testing
 
 	int file = my_open("hello");
-	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
+	my_write(file, "the quick brown fox jumps over the lazy dog", 43);
 	my_cat(file);
 
 	my_mkdir("test");
@@ -910,12 +858,12 @@ int main()
 	my_read(file, text, 3);
 	printf("Second read: %s\n", text);
 
-	my_write(file, "hello", 5, 'w');
+	my_write(file, "hello", 5);
 	my_cat(file);
 
-	set_seekw(file, 2);
-	my_write(file, "a", 1, 's');
-	my_cat(file);
+	// set_seekw(file, 2);
+	// my_write(file, "a", 1, 's');
+	// my_cat(file);
 	// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
 
