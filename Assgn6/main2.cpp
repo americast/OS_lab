@@ -864,6 +864,9 @@ int main()
 	int file2 = my_copy("test", "test_here");
 	my_cat(file2);
 
+	my_close(file2);
+	my_cat(file2);
+
 	// set_seekw(file, 2);
 	// my_write(file, "a", 1, 's');
 	// my_cat(file);
