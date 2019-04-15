@@ -328,19 +328,6 @@ int my_erase(int inode_num)				// Erases file contents, but not the file
 		inodes_there[j].valid = -1;
 	}
 
-	// file = index_from_fdt(file);
-	// if (used[file] == 0)
-	// 	return -1;
-	// int file_org = file;
-	// while(1)
-	// {
-	// 	strcpy(other_blocks + (file * sbc->block_size), "\0");
-	// 	if (fat[file] == -1)
-	// 		break;
-	// 	file = fat[file];
-	// 	used[file] = 0;
-	// }
-	// fat[file_org] = -1;
 	return 1;
 }
 
@@ -578,95 +565,6 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 			inodes[file].size = fdt[org_file].w_seek;
 		return count_text;
 	}
-
-
-	// int org_file = file;
-	// int w_seek = fdt[org_file].w_seek;
-	// file = index_from_fdt(file);
-	// if (mode == 'w')
-	// {
-	// 	w_seek = 0;
-	// 	my_erase(org_file);
-	// }
-	// else if (mode == 'a')
-	// {
-	// 	w_seek = 0;
-	// 	while(1)
-	// 		if (fat[file] == -1)
-	// 			break;
-	// 		else
-	// 			file = fat[file];
-
-	// }
-	// else
-	// {
-	// 	int reached_end = 0;
-	// 	while(w_seek > sbc->block_size)
-	// 	{
-	// 		if (fat[file] == -1)
-	// 		{
-	// 			reached_end = 1;
-	// 			break;
-	// 		}
-	// 		file = fat[file];
-	// 		w_seek -= sbc->block_size;
-	// 	}
-	// 	if (!reached_end)
-	// 		*(other_blocks + ((sbc->block_size * file) + w_seek)) = '\0';
-	// }
-	// int block_size = sbc->block_size;
-	// int count = 0;
-	// do
-	// {
-	// 	int len_here, end_flag = 0;
-	// 	if (length > block_size - 1 - strlen(other_blocks + sbc->block_size * file))
-	// 		len_here = block_size - 1 - strlen(other_blocks + sbc->block_size * file);
-	// 	else
-	// 	{
-	// 		len_here = length;
-	// 		end_flag = 1;
-	// 	}
-	// 	char *write_here;
-	// 	if (strlen(other_blocks + sbc->block_size * file) == 0)
-	// 		write_here = other_blocks + sbc->block_size * file;
-	// 	else
-	// 		write_here = (other_blocks + sbc->block_size * file + strlen(other_blocks + sbc->block_size * file));
-	// 	memcpy(write_here, text + count, len_here);
-	// 	if (mode != 's')
-	// 		write_here[len_here] = '\0';
-	// 	count+=len_here;
-	// 	length-=len_here;
-	// 	// file->len = file->len + len_here;
-	// 	if (end_flag)
-	// 	{
-	// 		fat[file] = -1;
-	// 		break;
-	// 	}
-	// 	else
-	// 	{
-	// 		int i, found_flag = 0;
-	// 		for (i = 0; i < sbc->num_blocks; i++)
-	// 		{
-	// 			if (used[i] == 0)
-	// 			{
-	// 				found_flag = 1;
-	// 				break;
-	// 			}
-	// 		}
-	// 		if (found_flag)
-	// 		{
-	// 			fat[file] = i;
-	// 			used[i] = 1;
-	// 			file = i;
-	// 		}
-	// 		else
-	// 		{
-	// 			fprintf(stderr, "Out of disk space\n");
-	// 			return -1;
-	// 		}
-	// 	}
-	// }while (length > 0);
-	// return length;
 }
 
 int my_close(int file)		// Closes the descriptor to a file
@@ -793,70 +691,6 @@ void my_read(int file, char *text, int len)
 		}
 
 	}
-
-
-	// int num_files = sbc->num_files;
-	// int i, found = 0;
-	// for (i = 0; i < num_files; i++)
-	// {
-	// 	// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
-	// 	if (strcmp(filename_map[i].filename, str) == 0)
-	// 	{
-	// 		// cout<<"Found :D\n";
-	// 		found = 1;
-	// 		break;
-	// 	}
-	// }
-
-	// if (!found)
-	// {
-	// 	fprintf(stderr, "File not found\n");
-	// 	return -1;
-	// }
-
-	// int index = filename_map[i].index;
-	// while(1)
-	// {
-	// 	char *now = other_blocks + sbc->block_size * index;
-	// 	cout<<now;
-	// 	if (fat[index] != -1)
-	// 		index = fat[index];
-	// 	else
-	// 	{
-	// 		cout<<endl;
-	// 		return 0;
-	// 	}
-	// }
-	// // int num_files = sbc->num_files;
-	// int fdt_file = file;
-	// file = index_from_fdt(file);
-	// int i = 0;
-	// int here = file;
-	// int seek_here = fdt[fdt_file].seek;
-	// while(1)
-	// {
-	// 	char *now = other_blocks + (here * sbc->block_size);
-	// 	if (seek_here < (sbc->block_size))
-	// 	{
-	// 		now+=seek_here;
-	// 		for (int j = 0; j < strlen(now); j++)
-	// 		{
-	// 			text[i++] = now[j];
-	// 			fdt[fdt_file].seek++;
-	// 			if (i >= len)
-	// 				return;
-	// 		}	
-	// 	}
-	// 	else
-	// 		seek_here -= sbc->block_size;
-	// 	if (fat[here] != -1)
-	// 		here = fat[here];
-	// 	else
-	// 	{
-	// 		text[i] = '\0';
-	// 		break;
-	// 	}
-	// }
 }
 
 void my_cat(int file)
@@ -871,38 +705,6 @@ void my_cat(int file)
 	cout<<text<<endl;
 
 	fdt[file].r_seek = r_seek_org;
-	// int num_files = sbc->num_files;
-	// int i, found = 0;
-	// for (i = 0; i < num_files; i++)
-	// {
-	// 	// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
-	// 	if (strcmp(filename_map[i].filename, str) == 0)
-	// 	{
-	// 		// cout<<"Found :D\n";
-	// 		found = 1;
-	// 		break;
-	// 	}
-	// }
-
-	// if (!found)
-	// {
-	// 	fprintf(stderr, "File not found\n");
-	// 	return -1;
-	// }
-
-	// int index = filename_map[i].index;
-	// while(1)
-	// {
-	// 	char *now = other_blocks + sbc->block_size * index;
-	// 	cout<<now;
-	// 	if (fat[index] != -1)
-	// 		index = fat[index];
-	// 	else
-	// 	{
-	// 		cout<<endl;
-	// 		return 0;
-	// 	}
-	// }
 }
 int my_copy(char *system_file, char *file_here)
 {
@@ -1223,25 +1025,4 @@ int main()
 	my_write(file, "ab", 2, 'a');
 	my_cat(file);
 	my_cat(file2);
-		// my_write(file, "test1", 5, 'w');
-	// my_cat("hello");
-
-	// my_write(file, " test 2 test3", 9, 'a');
-	// my_cat("hello");
-
-	// int file2 = my_copy("test", "test2");
-	// int file3 = my_open("test2");
-	// my_cat("test2");
-
-	// char txt_here[100];
-	// my_read(txt_here, file3, 7);
-	// cout<<"Text is: "<<txt_here<<endl;
-	// my_read(txt_here, file3, 3);
-	// cout<<"Text is: "<<txt_here<<endl;
-	// set_seekw(file2, 2);
-	// my_write(file2, "K", 1, 's');
-	// my_cat("test2");
-	// my_close(file2);
-	// my_read(txt_here, file2, 7);
-	// cout<<"Done."<<endl;
 }
