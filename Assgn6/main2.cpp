@@ -121,14 +121,25 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 
 	int dir_found_flag = 0;
 
-	for (int i = 0; i < block_size / 16; i++)
+	for (int j = 0; j < 5; j++)
 	{
-		if (dir_here[i].i_no == -1)
-		{
-			dir_pos = i;
-			dir_found_flag = 1;
+		if (dir_found_flag)
 			break;
+		curr_dir = inodes[curr_dir_inode].directly[j];
+		if (curr_dir == -1)
+		{
+			curr_dir = sbc->free_ptr;
+			sbc->free_ptr = ((free_block *)(blocks + curr_dir * sbc->block_size))->next_ptr;
 		}
+		for (int i = 0; i < block_size / 16; i++)
+		{
+			if (dir_here[i].i_no == -1)
+			{
+				dir_pos = i;
+				dir_found_flag = 1;
+				break;
+			}
+		}		
 	}
 
 	if (dir_found_flag)
@@ -140,7 +151,7 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 	else
 	{
 		fprintf(stderr, "Disk is full 1\n");
-		return -1;			
+		return -1;
 	}
 }
 
@@ -878,12 +889,19 @@ int main()
 	sbc->free_ptr = 4;
 
 	inodes = (inode*) (blocks + (sbc->block_size));
+	for (int i = 0; i < sbc->num_blocks; i++)
+	{
+		inodes[i].valid = -1;
+		for (int j = 0; j < 5; j++)
+			inodes[i].directly[j] = -1;
+		inodes[i].singly = -1;
+		inodes[i].doubly = -1;
+	}
+
 	inodes[0].valid = 1;
 	inodes[0].type = 2;
 	inodes[0].directly[0] = 3;
 
-	for (int i = 1; i < sbc->num_blocks; i++)
-		inodes[i].valid = -1;
 
 	curr_dir = 3;
 
