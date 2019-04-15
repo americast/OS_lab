@@ -368,7 +368,11 @@ int main()
 	for (int i = 0; i < num_blocks; i++)
 		used[i] = 0;
 
-	filename_map = (vol_info *) (used + num_blocks);
+	int delta = (((char *) (used + num_blocks)) - (char *) blocks) % sbc->block_size;
+	char *filename_map_here;
+	filename_map_here = (char *) (used + num_blocks);
+	filename_map_here += delta;
+	filename_map = (vol_info *) filename_map_here;
 	for (int i = 0; i < num_blocks; i++)
 	{
 		strcpy(filename_map[i].filename, "");
@@ -381,9 +385,12 @@ int main()
 		fat[i] = -1;
 
 	other_blocks = (char *) (blocks + (sizeof(sbc) + (2 * sizeof(int) + sizeof(vol_info)) * (num_blocks)) / sizeof(void *));
+	delta = (other_blocks - (char *) blocks) % sbc->block_size;
+	other_blocks += delta;
 
+	num_blocks -= 2;
 
-	for (int i = 0; i < num_blocks ; i++)
+	for (int i = 0; i < num_blocks; i++)
 		strcpy(other_blocks + (i * sbc->block_size), "\0");
 
 
