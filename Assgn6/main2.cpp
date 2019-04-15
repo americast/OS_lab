@@ -300,15 +300,23 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 		return count_text;
 	}
 
-	int free_block_index = sbc->free_ptr;
-	sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+	int free_block_index;
+	void *block_single;
+	if (seek == 0)
+	{
+		free_block_index = sbc->free_ptr;
+		sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+		block_single = (blocks + free_block_index * sbc->block_size);
+		inodes[file].singly = free_block_index;
+	}
+	else
+		block_single = (blocks + inodes[file].singly * sbc->block_size);
 
-	void* block_single = (blocks + free_block_index * sbc->block_size);
-	inodes[file].singly = free_block_index;
 	inode* inode_at_single = (inode*) block_single;
 
-	for (int i = 0; i < (sbc->block_size) / sizeof(inode); i++)
-		inode_at_single[i].valid = -1;
+	if (seek == 0)
+		for (int i = 0; i < (sbc->block_size) / sizeof(inode); i++)
+			inode_at_single[i].valid = -1;
 
 	int fin = 0;
 	for (int j = 0; j < (sbc->block_size) / sizeof(inode); j++)
@@ -366,6 +374,91 @@ int my_write(int file, char *text_here, int length, char mode)		// Writes to a f
 			inodes[file].size = fdt[org_file].w_seek;
 		return count_text;
 	}
+
+
+	free_block_index = -1;
+	void *block_double;
+	if (seek == 0)
+	{
+		free_block_index = sbc->free_ptr;
+		sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+		block_double = (blocks + free_block_index * sbc->block_size);
+		inodes[file].doubly = free_block_index;
+	}
+	else
+		block_double = (blocks + inodes[file].doubly * sbc->block_size);
+
+	inode* inode_at_double = (inode*) block_single;
+
+	if (seek == 0)
+		for (int i = 0; i < (sbc->block_size) / sizeof(inode); i++)
+			inode_at_double[i].valid = -1;
+
+	fin = 0;
+	for (int j = 0; j < (sbc->block_size) / sizeof(inode); j++)
+	{
+		if (fin)
+			break;
+		if (inode_at_double[j].valid == -1)
+		{
+
+			inode* inode_at_single = (inode*) (blocks + inode_at_double[j].directly[0]);
+
+			for (int j = 0; j < (sbc->block_size) / sizeof(inode); j++)
+			{
+				inode_at_single[j].valid == 1;
+				for (int i = 0; i < 5; i++)
+				{
+					if (length <= 0)
+					{
+						fin = 1;
+						break;
+					}
+					int free_block_index = sbc->free_ptr;
+					if (seek == 0)
+						sbc->free_ptr = ((free_block *) (blocks + free_block_index * sbc->block_size))->next_ptr;
+					int len_here = sbc->block_size;
+					if (length < sbc->block_size)
+						len_here = length;
+					char *block_here;
+					if (seek > 0)
+						block_here = (char*) (blocks + inode_at_single[j].directly[i] * sbc->block_size);
+					else
+						block_here = (char*) (blocks + free_block_index * sbc->block_size);
+					if (seek == 0)
+						inode_at_single[j].directly[i] = free_block_index;
+					for (int i = 0; i < len_here; i++)
+					{
+						// cout<<"Seek here in: "<<seek<<endl;
+						if (seek <= 0)
+						{
+							// cout<<"i : "<<i<<endl;
+							// cout<<"char here: "<<*(text + count_text + i)<<endl;
+							memcpy(block_here + i, text + count_text, 1);
+							length--;
+							count_text++;
+							fdt[org_file].w_seek++;
+						}
+						else
+							seek--;
+					}
+				}
+
+			}
+		}
+
+	}
+
+	if (length <= 0)
+	{
+		if (mode == 'w' || mode == 'a')
+			inodes[file].size = fdt[org_file].w_seek - 1;
+		else
+			inodes[file].size = fdt[org_file].w_seek;
+		return count_text;
+	}
+
+
 	// int org_file = file;
 	// int w_seek = fdt[org_file].w_seek;
 	// file = index_from_fdt(file);
@@ -924,7 +1017,6 @@ int main()
 	}
 
 	// API testing
-
 	int file = my_open("hello");
 	my_write(file, "the quick brown fox jumps over the lazy dog", 43, 'w');
 	my_cat(file);
@@ -933,10 +1025,14 @@ int main()
 	printf("%d\n", curr_dir);
 	my_chdir("test");
 	printf("%d\n", curr_dir);
+	int file3 = my_open("hello2");
+	my_write(file3, "oh!", 3, 'w');
+	my_cat(file3);
 	my_chdir("..");
 	printf("%d\n", curr_dir);
-	// my_rmdir("test");
-	// my_chdir("test");
+	my_rmdir("test");
+	my_chdir("test");
+	// my_cat(file3);	// check this
 	// my_chdir("..");
 
 	char text[100];
@@ -949,7 +1045,9 @@ int main()
 	my_write(file, "hello", 5, 'w');
 	my_cat(file);
 
+	cout<<"Starting copy"<<endl;
 	int file2 = my_copy("test", "test_here");
+	cout<<"file 2 no: "<<file2<<endl;
 	my_cat(file2);
 
 	my_close(file2);
@@ -960,7 +1058,7 @@ int main()
 	my_write(file, "ab", 2, 'a');
 	my_cat(file);
 	my_cat(file2);
-	// my_write(file, "test1", 5, 'w');
+		// my_write(file, "test1", 5, 'w');
 	// my_cat("hello");
 
 	// my_write(file, " test 2 test3", 9, 'a');
