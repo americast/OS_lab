@@ -206,6 +206,71 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 			}	
 		}
 	}
+
+	if (!dir_found_flag)
+	{
+		// doubly
+		cout<<"Inside doubly"<<endl;
+		int ptr_doubly, ptr_singly;
+		int is_free = 0;
+		if (inodes[curr_dir_inode].doubly == -1)
+		{
+			inodes[curr_dir_inode].doubly = sbc->free_ptr;
+			ptr_doubly = sbc->free_ptr;
+			sbc->free_ptr = ((free_block *)(blocks + ptr_doubly * sbc->block_size))->next_ptr;
+			is_free = 1;
+		}
+		inode* inode_at_double = (inode *) (blocks + ptr_doubly * sbc->block_size);
+		for (int l = 0; l < sbc->block_size / sizeof(inode); l++)
+		{
+
+			if (inode_at_double[l].singly == -1)
+			{
+				inode_at_double[l].singly = sbc->free_ptr;
+				ptr_singly = sbc->free_ptr;
+				sbc->free_ptr = ((free_block *)(blocks + ptr_singly * sbc->block_size))->next_ptr;
+				is_free = 1;
+			}
+
+			inode* inode_at_single = (inode *) (blocks + inode_at_double[l].singly * sbc->block_size);
+			if (is_free)
+			{
+				for (int i = 0; i < sbc->block_size / sizeof(inode); i++)
+				{
+					for (int j = 0; j < 5; j++)
+						inode_at_single[i].directly[j] = -1;
+				}
+			}
+
+			for (int k = 0; k < sbc->block_size / sizeof(inode); k++)
+			{
+				if (dir_found_flag)
+					break;
+				for (int j = 0; j < 5; j++)
+				{
+					if (dir_found_flag)
+						break;
+					curr_dir = inode_at_single[k].directly[j];
+					if (curr_dir == -1)
+					{
+						curr_dir = sbc->free_ptr;
+						inode_at_single[k].directly[j] = curr_dir;
+						sbc->free_ptr = ((free_block *)(blocks + curr_dir * sbc->block_size))->next_ptr;
+					}
+					for (int i = 0; i < block_size / 16; i++)
+					{
+						if (dir_here[i].i_no == -1)
+						{
+							dir_pos = i;
+							dir_found_flag = 1;
+							break;
+						}
+					}		
+				}	
+			}
+
+		}
+	}
 }
 
 
@@ -619,98 +684,6 @@ int my_close(int file)		// Closes the descriptor to a file
 }
 
 
-void my_cat(int file)
-{
-	file = index_from_fdt(file);
-	inode i_here = inodes[file];
-	int count_text = 0;
-
-	
-	for (int i = 0; i < 5; i++)
-	{
-		int block_here_index = i_here.directly[i];
-		char* block_here = (char*) (blocks + block_here_index * sbc->block_size);
-		int len_here = strlen(block_here);
-		if (len_here >= sbc->block_size)
-		{
-			char buf_here[sbc->block_size + 1];
-			memcpy(buf_here, block_here, sbc->block_size);
-			buf_here[sbc->block_size] = '\0';
-			printf("%s", buf_here);
-		}
-		else
-		{
-			printf("%s\n", block_here);
-			return;
-		}
-	}
-
-
-	int single_block_here_index = inodes[file].singly;
-	inode* inode_at_single = (inode*) (blocks + single_block_here_index * sbc->block_size);
-
-	for (int j = 0; j < (sbc->block_size) / sizeof(inode); j++)
-	{
-		if (inode_at_single[j].valid == -1)
-			return;
-		else
-		{
-			inode_at_single[j].valid == 1;
-			for (int i = 0; i < 5; i++)
-			{
-				int block_here_index = inode_at_single[j].directly[i];
-				char* block_here = (char*) (blocks + block_here_index * sbc->block_size);
-				int len_here = strlen(block_here);
-				if (len_here >= sbc->block_size)
-				{
-					char buf_here[sbc->block_size + 1];
-					memcpy(buf_here, block_here, sbc->block_size);
-					buf_here[sbc->block_size] = '\0';
-					printf("%s", buf_here);
-				}
-				else
-				{
-					printf("%s\n", block_here);
-					return;
-				}
-			}
-		}
-
-	}
-
-	// int num_files = sbc->num_files;
-	// int i, found = 0;
-	// for (i = 0; i < num_files; i++)
-	// {
-	// 	// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
-	// 	if (strcmp(filename_map[i].filename, str) == 0)
-	// 	{
-	// 		// cout<<"Found :D\n";
-	// 		found = 1;
-	// 		break;
-	// 	}
-	// }
-
-	// if (!found)
-	// {
-	// 	fprintf(stderr, "File not found\n");
-	// 	return -1;
-	// }
-
-	// int index = filename_map[i].index;
-	// while(1)
-	// {
-	// 	char *now = other_blocks + sbc->block_size * index;
-	// 	cout<<now;
-	// 	if (fat[index] != -1)
-	// 		index = fat[index];
-	// 	else
-	// 	{
-	// 		cout<<endl;
-	// 		return 0;
-	// 	}
-	// }
-}
 
 void my_read(int file, char *text, int len)
 {
@@ -886,6 +859,51 @@ void my_read(int file, char *text, int len)
 	// }
 }
 
+void my_cat(int file)
+{
+	int r_seek_org = fdt[file].r_seek;
+	fdt[file].r_seek = 0;
+
+	int file_here = index_from_fdt(file);
+	char text[inodes[file_here].size];
+
+	my_read(file, text, inodes[file_here].size);
+	cout<<text<<endl;
+
+	fdt[file].r_seek = r_seek_org;
+	// int num_files = sbc->num_files;
+	// int i, found = 0;
+	// for (i = 0; i < num_files; i++)
+	// {
+	// 	// cout<<"Name of file is: "<<((FAT *) blocks[1])[i].filename<<endl;
+	// 	if (strcmp(filename_map[i].filename, str) == 0)
+	// 	{
+	// 		// cout<<"Found :D\n";
+	// 		found = 1;
+	// 		break;
+	// 	}
+	// }
+
+	// if (!found)
+	// {
+	// 	fprintf(stderr, "File not found\n");
+	// 	return -1;
+	// }
+
+	// int index = filename_map[i].index;
+	// while(1)
+	// {
+	// 	char *now = other_blocks + sbc->block_size * index;
+	// 	cout<<now;
+	// 	if (fat[index] != -1)
+	// 		index = fat[index];
+	// 	else
+	// 	{
+	// 		cout<<endl;
+	// 		return 0;
+	// 	}
+	// }
+}
 int my_copy(char *system_file, char *file_here)
 {
 	int file = my_open(file_here);
