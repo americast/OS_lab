@@ -153,6 +153,59 @@ int my_open(char *file_name)		// To reopen a file or create a new one
 		fprintf(stderr, "Disk is full 1\n");
 		return -1;
 	}
+
+
+	if (!dir_found_flag)
+	{
+		// singly
+		cout<<"Inside singly"<<endl;
+		int ptr_singly;
+		int is_free = 0;
+		if (inodes[curr_dir_inode].singly == -1)
+		{
+			inodes[curr_dir_inode].singly = sbc->free_ptr;
+			ptr_singly = sbc->free_ptr;
+			sbc->free_ptr = ((free_block *)(blocks + ptr_singly * sbc->block_size))->next_ptr;
+			is_free = 1;
+		}
+
+		inode* inode_at_single = (inode *) (blocks + ptr_singly * sbc->block_size);
+		if (is_free)
+		{
+			for (int i = 0; i < sbc->block_size / sizeof(inode); i++)
+			{
+				for (int j = 0; j < 5; j++)
+					inode_at_single[i].directly[j] = -1;
+			}
+		}
+
+		for (int k = 0; k < sbc->block_size / sizeof(inode); k++)
+		{
+			if (dir_found_flag)
+				break;
+			for (int j = 0; j < 5; j++)
+			{
+				if (dir_found_flag)
+					break;
+				curr_dir = inode_at_single[k].directly[j];
+				if (curr_dir == -1)
+				{
+					curr_dir = sbc->free_ptr;
+					inode_at_single[k].directly[j] = curr_dir;
+					sbc->free_ptr = ((free_block *)(blocks + curr_dir * sbc->block_size))->next_ptr;
+				}
+				for (int i = 0; i < block_size / 16; i++)
+				{
+					if (dir_here[i].i_no == -1)
+					{
+						dir_pos = i;
+						dir_found_flag = 1;
+						break;
+					}
+				}		
+			}	
+		}
+	}
 }
 
 
