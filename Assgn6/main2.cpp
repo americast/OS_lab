@@ -736,7 +736,10 @@ int my_mkdir(char *dir_name)
 	for (i = 0; i < block_size / 16; i++)
 	{
 		if (strcmp(dir_here[i].filename, dir_name) == 0 && dir_here[i].i_no != -1 && inodes[dir_here[i].i_no].type == 2)
+		{
+			fprintf(stderr, "Directory exists\n");
 			return 1;
+		}
 	}
 
 	int num_blocks = sbc->num_blocks;
@@ -1024,5 +1027,7 @@ int main()
 	my_cat(file);
 	my_write(file, "ab", 2, 'a');
 	my_cat(file);
+	my_mkdir("test");
+	my_mkdir("test");
 	my_cat(file2);
 }
