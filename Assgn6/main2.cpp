@@ -1048,8 +1048,40 @@ int my_rmdir(char *dir_name)
 				// cout<<"rm dir_here[i].i_no = -1: "<<dir_here[i].i_no<<endl;
 				return 1;
 			}
+			int singly = inodes[dir_here[i].i_no].singly, doubly = inodes[dir_here[i].i_no].doubly;
+			if (singly)
+			{
+				inode *inodes_here = (inode*) (blocks + singly * sbc->block_size);
+				for (int j_ = 0; j_ < sbc->block_size / sizeof(inode); j_++)
+				{
+					for (int k = 0; k < 5; k++)
+					{
+						if (inodes_here[j_].directly[k] == -1)
+							break;
+						dir_entry* dir_here_inside = (dir_entry *) (blocks + inodes_here[j_].directly[k] * sbc->block_size);
+						for (int j = 2; j < sbc->block_size / sizeof(dir_entry); j++)
+						{
+							if (dir_here_inside[j].i_no > 0)
+							{
+								// cout<<"dir test filenames: "<<dir_here_inside[j].filename<<endl;
+								my_erase(dir_here_inside[j].i_no);
+							}
+						}
+						// cout<<"parent block num free: "<<block_num<<endl;
+						add_to_free(inodes_here[j_].directly[k]);
+						// memcpy(dir_here[i].filename, 0, 14);
+						// cout<<"-1 i "<<i<<endl;
+						// cout<<"rm Found at "<<i<<endl;
+						dir_here[i].i_no = -1;
+						// cout<<"rm dir_here[i].i_no = -1: "<<dir_here[i].i_no<<endl;
+						return 1;
+
+					}
+				}
+			}
 		}
 	}
+	fprintf(stderr, "Directory not found\n");
 }
 
 int main()
@@ -1129,7 +1161,8 @@ int main()
 	my_rmdir("test");
 	cout<<"Ch to del dir"<<endl;
 	my_chdir("test");
-	// my_cat(file3);	// check this
+	cout<<"Print file 3\n";
+	my_cat(file3);	// check this
 	// my_chdir("..");
 
 	char text[100];
