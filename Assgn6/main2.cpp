@@ -168,6 +168,7 @@ void set_seekr(int file, int val)
 
 void add_to_free(int block_num)
 {
+	// cout<<"block num to free "<<block_num<<endl;
 	int curr_free = sbc->free_ptr;
 	void* block_here = (blocks + block_num * sbc->block_size);
 	memset(block_here, 0, sbc->block_size);
@@ -178,11 +179,13 @@ void add_to_free(int block_num)
 
 int my_erase(int inode_num)				// Erases file contents, but not the file
 {
+	// cout<<"inode_num: "<<inode_num<<endl;
 	inode inode_here = inodes[inode_num];
 	// directly
 	for (int i = 0; i < 5; i++)
 		if (inode_here.directly[i] != -1)
 		{
+			// cout<<"inode_here.directly[i] "<<inode_here.directly[i]<<endl;
 			add_to_free(inode_here.directly[i]);
 			inode_here.directly[i] = -1;
 		}
@@ -923,11 +926,14 @@ int my_chdir(char *dir_name)
 	int block_size = sbc->block_size;
 
 	int i, found = 0;
+	// cout<<"ch curr_dir: "<<curr_dir<<endl;
 	dir_entry* dir_here = (dir_entry*) (blocks + curr_dir * block_size);
 	for (i = 0; i < block_size / 16; i++)
 	{
 		if (strcmp(dir_here[i].filename, dir_name) == 0 && dir_here[i].i_no != -1 && inodes[dir_here[i].i_no].type == 2)
 		{
+			// cout<<"ch Found at "<<i<<endl;
+			// cout<<"ch dir_here[i].i_no: "<<dir_here[i].i_no<<endl;
 			curr_dir = inodes[dir_here[i].i_no].directly[0];
 			curr_dir_inode = dir_here[i].i_no;
 			return 1;
@@ -942,17 +948,35 @@ int my_rmdir(char *dir_name)
 	int block_size = sbc->block_size;
 
 	int i, found = 0;
+	// cout<<"rm curr_dir: "<<curr_dir<<endl;
 	dir_entry* dir_here = (dir_entry*) (blocks + curr_dir * block_size);
 	for (i = 0; i < block_size / 16; i++)
 	{
 		if (strcmp(dir_here[i].filename, dir_name) == 0 && dir_here[i].i_no != -1 && inodes[dir_here[i].i_no].type == 2)
 		{
-			int block_num = inodes[dir_here[i].i_no].directly[0];
-			dir_entry* dir_here = (dir_entry *) (blocks + block_num * sbc->block_size);
-			for (int i = 0; i < sbc->block_size / sizeof(dir_entry); i++)
-				my_erase(dir_here[i].i_no);
-			add_to_free(block_num);
-			return 1;
+			for (int k = 0; k < 5; k++)
+			{
+				int block_num = inodes[dir_here[i].i_no].directly[k];
+				if (block_num == -1)
+					break;
+				dir_entry* dir_here_inside = (dir_entry *) (blocks + block_num * sbc->block_size);
+				for (int j = 2; j < sbc->block_size / sizeof(dir_entry); j++)
+				{
+					if (dir_here_inside[j].i_no > 0)
+					{
+						// cout<<"dir test filenames: "<<dir_here_inside[j].filename<<endl;
+						my_erase(dir_here_inside[j].i_no);
+					}
+				}
+				// cout<<"parent block num free: "<<block_num<<endl;
+				add_to_free(block_num);
+				// memcpy(dir_here[i].filename, 0, 14);
+				// cout<<"-1 i "<<i<<endl;
+				// cout<<"rm Found at "<<i<<endl;
+				dir_here[i].i_no = -1;
+				// cout<<"rm dir_here[i].i_no = -1: "<<dir_here[i].i_no<<endl;
+				return 1;
+			}
 		}
 	}
 }
@@ -1030,7 +1054,9 @@ int main()
 	my_cat(file3);
 	my_chdir("..");
 	printf("%d\n", curr_dir);
+	cout<<"Del dir"<<endl;
 	my_rmdir("test");
+	cout<<"Ch to del dir"<<endl;
 	my_chdir("test");
 	// my_cat(file3);	// check this
 	// my_chdir("..");
@@ -1047,7 +1073,7 @@ int main()
 
 	cout<<"Starting copy"<<endl;
 	int file2 = my_copy("test", "test_here");
-	cout<<"file 2 no: "<<file2<<endl;
+	// cout<<"file 2 no: "<<file2<<endl;
 	my_cat(file2);
 
 	my_close(file2);
